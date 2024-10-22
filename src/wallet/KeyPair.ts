@@ -1,5 +1,5 @@
-import * as crypto from "crypto";
-import { Cryptography } from "../Cryptography";
+import { Cryptography } from "../Cryptography.js";
+
 
 export class KeyPair {
     publicKey: string = "";
