@@ -32,7 +32,7 @@ export class Cryptography {
     static encryptUsingAES(valueToEncrypt: string, key: string): {encryptedValue: string, iv: string} {
         const iv = crypto.randomBytes(16);
 
-        const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), iv);
   
         let encryptedValue = cipher.update(valueToEncrypt, 'base64', 'base64');
         encryptedValue += cipher.final('base64');

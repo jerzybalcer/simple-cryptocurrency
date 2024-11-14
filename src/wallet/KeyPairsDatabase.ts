@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { KeyPair } from "./wallet/KeyPair.js";
+import { KeyPair } from "./KeyPair.js";
 
 export class KeyPairsDatabase {
     private static path = './keys.json';
