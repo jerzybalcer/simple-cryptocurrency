@@ -13,7 +13,7 @@ export class KeyPairsDatabase {
 
         // Instantiate KeyPair objects for class methods to be available
         return parsedKeyPairs.map((keyPair) => 
-            new KeyPair(keyPair.publicKey, keyPair.encryptedPrivateKey, keyPair.initializationVector, keyPair.salt)
+            new KeyPair(keyPair.publicKey, keyPair.encryptedPrivateKey, keyPair.initializationVector, keyPair.salt, keyPair.tag)
         );
     }
 

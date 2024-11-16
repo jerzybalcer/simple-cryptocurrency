@@ -1,4 +1,4 @@
-import { Wallet } from "./wallet/Wallet.js";
+import { Wallet } from "./Wallet.js";
 
 
 const wallet = new Wallet('bezpieczne hasło');

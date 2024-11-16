@@ -29,19 +29,22 @@ export class Cryptography {
         return { secret: secret, salt: salt };
     }
 
-    static encryptUsingAES(valueToEncrypt: string, key: string): {encryptedValue: string, iv: string} {
-        const iv = crypto.randomBytes(16);
+    static encryptUsingAES(valueToEncrypt: string, key: string): { encryptedValue: string, iv: string, tag: string } {
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(key, 'base64'), iv);
 
-        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), iv);
-  
         let encryptedValue = cipher.update(valueToEncrypt, 'base64', 'base64');
         encryptedValue += cipher.final('base64');
 
-        return { encryptedValue: encryptedValue, iv: iv.toString('base64') };
+        const tag = cipher.getAuthTag().toString('base64');
+
+        return { encryptedValue: encryptedValue, iv: iv.toString('base64'), tag: tag };
     }
 
-    static decryptUsingAES(valueToDecrypt: string, key: string, iv: string): string {
-        const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.from(iv, 'base64'));
+    static decryptUsingAES(valueToDecrypt: string, key: string, iv: string, tag: string): string {
+        const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
+        decipher.setAuthTag(Buffer.from(tag, 'base64'));
+
         let decryptedValue = decipher.update(valueToDecrypt, 'base64', 'base64');
         decryptedValue += decipher.final('base64');
 

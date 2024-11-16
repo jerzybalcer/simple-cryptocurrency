@@ -1,4 +1,4 @@
-import { Cryptography } from "./Cryptography";
+import { Cryptography } from "../Cryptography.js";
 
 export class Block {
     index: number;

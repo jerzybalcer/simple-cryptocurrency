@@ -6,12 +6,14 @@ export class KeyPair {
     encryptedPrivateKey: string = "";
     initializationVector: string = "";
     salt: string = "";
+    tag: string = "";
 
-    constructor(publicKey: string, encryptedPrivateKey: string, iv: string, salt: string) {
+    constructor(publicKey: string, encryptedPrivateKey: string, iv: string, salt: string, tag: string) {
         this.publicKey = publicKey;
         this.encryptedPrivateKey = encryptedPrivateKey;
         this.initializationVector = iv;
         this.salt = salt;
+        this.tag = tag;
     }
 
     static generate(password: string): KeyPair {
@@ -19,9 +21,9 @@ export class KeyPair {
 
         const { secret, salt } = Cryptography.generateSecretFromPassword(password);
 
-        const { encryptedValue: encryptedPrivateKey, iv } = Cryptography.encryptUsingAES(privateKey, secret);
+        const { encryptedValue: encryptedPrivateKey, iv, tag } = Cryptography.encryptUsingAES(privateKey, secret);
 
-        return new KeyPair(publicKey, encryptedPrivateKey, iv, salt);
+        return new KeyPair(publicKey, encryptedPrivateKey, iv, salt, tag);
     }
 
     getAddress(): string {
@@ -31,6 +33,6 @@ export class KeyPair {
     getDecryptedPrivateKey(password: string): string {
         const { secret } = Cryptography.generateSecretFromPassword(password, this.salt);
 
-        return Cryptography.decryptUsingAES(this.encryptedPrivateKey, secret, this.initializationVector);
+        return Cryptography.decryptUsingAES(this.encryptedPrivateKey, secret, this.initializationVector, this.tag);
     }
 }

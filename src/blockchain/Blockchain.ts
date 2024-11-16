@@ -1,12 +1,17 @@
-import { Block } from "./Block";
+import { Block } from "./Block.js";
+import { BlocksDatabase } from "./BlocksDatabase.js";
 
 export class Blockchain {
-    chain: Block[];
+    private chain: Block[];
 
-    genesisBlock: Block = new Block(0, '', 1731602440343, 'Genesis Block');
+    private genesisBlock: Block = new Block(0, '', 1731602440343, 'Genesis Block');
 
     constructor() {
-        this.chain = [this.genesisBlock];
+        this.chain = BlocksDatabase.load();
+
+        if(this.chain.length === 0){
+            this.chain = [this.genesisBlock];
+        }
     }
 
     getBlocks(): Block[] {
@@ -17,18 +22,18 @@ export class Blockchain {
         return this.chain[this.chain.length - 1];
     }
 
-    generateNextBlock = (blockData: string) => {
+    generateNextBlock = (blockData: string): Block => {
         const previousBlock: Block = this.getLatestBlock();
         const newBlock: Block = new Block(previousBlock.index + 1, previousBlock.hash, new Date().getTime(), blockData);
 
         this.addBlock(newBlock);
 
-        // TODO: broadcast new block to other nodes
+        BlocksDatabase.save(this.chain);
     
         return newBlock;
     };
 
-    isNewBlockValid = (newBlock: Block, previousBlock: Block) => {
+    private isNewBlockValid = (newBlock: Block, previousBlock: Block): boolean => {
         if(!newBlock.hasValidStructure()) {
             return false;
         }
@@ -48,7 +53,7 @@ export class Blockchain {
         return true;
     };
 
-    addBlock(newBlock: Block) {
+    private addBlock(newBlock: Block): void {
         const latestBlock = this.getLatestBlock();
 
         if (!this.isNewBlockValid(newBlock, latestBlock)) {
@@ -58,7 +63,7 @@ export class Blockchain {
         this.chain.push(newBlock);
     }
 
-    isOtherChainMatching = (otherChain: Block[]): boolean => {
+    private isOtherChainMatching = (otherChain: Block[]): boolean => {
         if(JSON.stringify(this.genesisBlock) !== JSON.stringify(otherChain[0])){
             return false;
         }
@@ -72,7 +77,7 @@ export class Blockchain {
         return true;
     }
 
-    replaceChain = (newChain: Block[]) => {
+    replaceChain = (newChain: Block[]): Block[] => {
         if (!this.isOtherChainMatching(newChain)) {
             throw Error("New chain is invalid");
         }
@@ -84,5 +89,6 @@ export class Blockchain {
         this.chain = newChain;
 
         // TODO: broadcast new chain to other nodes
+        return this.chain;
     };
 }

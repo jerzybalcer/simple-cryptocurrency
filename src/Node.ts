@@ -1,4 +1,3 @@
-import { Socket } from "dgram";
 import WebSocket, { WebSocketServer } from "ws";
 
 interface Message {
@@ -78,7 +77,7 @@ export class Node {
 
   // Method for handling communication between nodes
   // sourceSocket is the socket from which message comes - used if there is need to communicate back
-  handleMessage(data: Message, sourceSocket: WebSocket = null) {
+  handleMessage(data: Message, sourceSocket: WebSocket) {
     if (data.type === "start") {
       switch (data.mode) {
         case "initialPortConnection":
@@ -152,18 +151,4 @@ export class Node {
     console.log("Alert, connection to port lost!");
     // A mechanism is needed to somehow reestablish connection with the rest of the network
   }
-}
-
-const args = process.argv.slice(2);
-const port = parseInt(args[0]); // Port for this node
-
-const node = new Node(port);
-
-if (args.length === 1) {
-  // This is the first node
-  node.startAsFirstNode();
-} else if (args.length === 2) {
-  // Join an existing network
-  const existingNodePort = parseInt(args[1]);
-  node.joinNetwork(existingNodePort);
 }
