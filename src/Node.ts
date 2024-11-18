@@ -1,10 +1,26 @@
 import WebSocket, { WebSocketServer } from "ws";
+import { Blockchain } from "./blockchain/Blockchain.js";
+import { Block } from "./blockchain/Block.js";
 
 interface Message {
   mode: string; // type of message, used to determine which action should be taken in handleMessage method
   type: string; // start, success, error  - defines the stage at which message is
   port: number; // node port which sent message
   data: any; // data inside message, can be anything, but mostly object
+}
+
+interface AdvancedMessage {
+  originalSender: number; // Orignal sender port number, to avoid message circulating through the network
+  innerData: any; // data sent
+  dataHash: string; // encrypted hash of innerData, to be decrypted and checked using provided key
+  decryptionKey: string; // not used yet
+  encrypted: boolean; // determines if message is encrypted or not
+}
+interface BlockData {
+  index: number;
+  previousHash: string;
+  timestamp: number;
+  data: string;
 }
 interface SocketPortPair {
   port: number;
@@ -19,6 +35,9 @@ export class Node {
   private knownPorts: Set<number> = new Set<number>(); // list of known socket ports that current node knows
 
   private isFirstNode: boolean = false;
+
+  private hasBlockChain = false;
+  private blockChain: Blockchain = new Blockchain();
 
   constructor(port: number) {
     this.port = port;
@@ -38,6 +57,37 @@ export class Node {
 
   startAsFirstNode() {
     // Currently not used
+  }
+
+  public getKnownPorts() {
+    return this.knownPorts;
+  }
+
+  // pass blockchain to the node from https API - used for initialization of node only
+  passBlockchain(blockChain: Blockchain) {
+    this.blockChain = blockChain;
+    this.hasBlockChain = true;
+  }
+
+  broadcastBlock(block: Block) {
+    let innerMes: AdvancedMessage = {
+      originalSender: this.port,
+      innerData: JSON.stringify(block),
+      dataHash: "test",
+      decryptionKey: "test",
+      encrypted: false,
+    };
+    let preMessage = {
+      type: "start",
+      mode: "broadcastBlock",
+      port: this.port,
+      data: innerMes,
+    };
+    let message = JSON.stringify(preMessage);
+    this.peers.forEach((peer) => {
+      console.log("Sending broadcast about new block");
+      peer.socket.send(message);
+    });
   }
 
   // Join an existing network by connecting to another node
@@ -74,7 +124,30 @@ export class Node {
     this.peers.push(pair);
     this.knownPorts.add(existingNodePort);
   }
-
+  broadcastBlockchain() {
+    let message: Message = {
+      type: "start",
+      mode: "broadcastBlockchain",
+      port: this.port,
+      data: this.blockChain.getBlocks(),
+    };
+    this.peers.forEach((peer) => {
+      console.log("Sending broadcast about blockchain");
+      peer.socket.send(JSON.stringify(message));
+    });
+  }
+  public requestBlockchain() {
+    let message: Message = {
+      type: "start",
+      mode: "requestBlockchain",
+      port: this.port,
+      data: "",
+    };
+    this.peers.forEach((peer) => {
+      console.log("Requesting blockchain");
+      peer.socket.send(JSON.stringify(message));
+    });
+  }
   // Method for handling communication between nodes
   // sourceSocket is the socket from which message comes - used if there is need to communicate back
   handleMessage(data: Message, sourceSocket: WebSocket) {
@@ -90,7 +163,6 @@ export class Node {
           this.knownPorts.add(data.port);
           let pair: SocketPortPair = { port: data.port, socket: sourceSocket };
           this.peers.push(pair);
-
           let preMessage = {
             type: "start",
             mode: "broadcastNewNode",
@@ -106,6 +178,56 @@ export class Node {
           });
 
           break;
+
+        case "requestBlockchain":
+          // After request for blockchain is made, pass this information further and broadcast your own chain (if existing)
+          console.log("Broadcast: request Blockchain \n");
+          this.peers.forEach((peer) => {
+            if (peer.socket !== sourceSocket) {
+              peer.socket.send(JSON.stringify(data));
+            }
+          });
+          console.log("Does have blockchain?: ")
+          console.log(this.hasBlockChain);
+          if (this.hasBlockChain) {
+            console.log("begin broadcast of blockchain")
+            this.broadcastBlockchain();
+          }
+          break;
+
+        case "broadcastBlockchain":
+          // broadcast current node blockchain (if exists)
+          let chain = data.data;
+          console.log("Receiving blockchain")
+          console.log("Current chain length:")
+          console.log(this.blockChain.getBlocks().length)
+          console.log("Incoming chain length:")
+          console.log(chain.length);
+          if (this.hasBlockChain) {
+            let tempChain: Block[] = [];
+            chain.forEach((block: BlockData) => {
+              let b = new Block(
+                block.index,
+                block.previousHash,
+                block.timestamp,
+                block.data
+              );
+              tempChain.push(b);
+            });
+            if (tempChain.length > this.blockChain.getBlocks().length) {
+              this.blockChain.replaceChain(tempChain);
+              if(data.port !== this.port){
+                 this.broadcastBlockchain();
+              }
+            }
+          } else {
+            this.peers.forEach((peer) => {
+              console.log("Passing along the broadcast about blockchain");
+              peer.socket.send(JSON.stringify(data));
+            });
+          }
+          break;
+
         case "broadcastNewNode":
           console.log("Broadcast: new node joined network \n");
           let newSet = new Set<number>([
@@ -121,6 +243,30 @@ export class Node {
             }
           });
           break;
+        case "broadcastBlock":
+          console.log("Node broadcast");
+          let messageInnerData = data.data as AdvancedMessage;
+          if (this.hasBlockChain) {
+            console.log("New block acquired");
+            const rawBlock = JSON.parse(
+              messageInnerData.innerData
+            ) as BlockData;
+            const newBlock = new Block(
+              rawBlock.index,
+              rawBlock.previousHash,
+              rawBlock.timestamp,
+              rawBlock.data
+            );
+            this.blockChain.addBlock(newBlock);
+          }
+          let broadcastBLockMessage = JSON.stringify(data);
+          if (data.data.port !== this.port) {
+            this.peers.forEach((peer) => {
+              if (peer.socket !== sourceSocket) {
+                peer.socket.send(broadcastBLockMessage);
+              }
+            });
+          }
       }
     } else if (data.type === "success") {
       switch (data.mode) {

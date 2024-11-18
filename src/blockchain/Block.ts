@@ -19,7 +19,7 @@ export class Block {
         return Cryptography.hashUsingSHA256(this.index + this.previousHash + this.timestamp + this.data);
     }
 
-    hasValidStructure = (): boolean => {
+   public hasValidStructure(): boolean {
         return typeof this.index === 'number'
             && typeof this.hash === 'string'
             && typeof this.previousHash === 'string'
