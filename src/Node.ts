@@ -187,10 +187,10 @@ export class Node {
               peer.socket.send(JSON.stringify(data));
             }
           });
-          console.log("Does have blockchain?: ")
+          console.log("Does have blockchain?: ");
           console.log(this.hasBlockChain);
           if (this.hasBlockChain) {
-            console.log("begin broadcast of blockchain")
+            console.log("begin broadcast of blockchain");
             this.broadcastBlockchain();
           }
           break;
@@ -198,10 +198,10 @@ export class Node {
         case "broadcastBlockchain":
           // broadcast current node blockchain (if exists)
           let chain = data.data;
-          console.log("Receiving blockchain")
-          console.log("Current chain length:")
-          console.log(this.blockChain.getBlocks().length)
-          console.log("Incoming chain length:")
+          console.log("Receiving blockchain");
+          console.log("Current chain length:");
+          console.log(this.blockChain.getBlocks().length);
+          console.log("Incoming chain length:");
           console.log(chain.length);
           if (this.hasBlockChain) {
             let tempChain: Block[] = [];
@@ -216,14 +216,16 @@ export class Node {
             });
             if (tempChain.length > this.blockChain.getBlocks().length) {
               this.blockChain.replaceChain(tempChain);
-              if(data.port !== this.port){
-                 this.broadcastBlockchain();
+              if (data.port !== this.port) {
+                this.broadcastBlockchain();
               }
             }
           } else {
             this.peers.forEach((peer) => {
-              console.log("Passing along the broadcast about blockchain");
-              peer.socket.send(JSON.stringify(data));
+              if (peer.socket !== sourceSocket) {
+                console.log("Passing along the broadcast about blockchain");
+                peer.socket.send(JSON.stringify(data));
+              }
             });
           }
           break;
