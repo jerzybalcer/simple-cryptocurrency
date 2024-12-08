@@ -27,7 +27,7 @@ export class KeyPair {
     }
 
     getAddress(): string {
-        return Cryptography.hashUsingSHA256(this.publicKey);
+        return Cryptography.hashUsingSHA256(this.publicKey, 'base64');
     }
 
     getDecryptedPrivateKey(password: string): string {

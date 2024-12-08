@@ -51,7 +51,7 @@ export class Cryptography {
         return Buffer.from(decryptedValue, 'base64').toString('base64');
     }
 
-    static hashUsingSHA256(valueToHash: string) {
-        return crypto.createHash('sha256').update(valueToHash, 'base64').digest('base64');
+    static hashUsingSHA256(valueToHash: string, inputEncoding: crypto.Encoding = 'utf8') {
+        return crypto.createHash('sha256').update(valueToHash, inputEncoding).digest('base64');
     }
 }

@@ -1,6 +1,7 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { Blockchain } from "./blockchain/Blockchain.js";
 import { Block } from "./blockchain/Block.js";
+import { IBlock } from "./blockchain/IBlock.js";
 
 interface Message {
   mode: string; // type of message, used to determine which action should be taken in handleMessage method
@@ -16,16 +17,12 @@ interface AdvancedMessage {
   decryptionKey: string; // not used yet
   encrypted: boolean; // determines if message is encrypted or not
 }
-interface BlockData {
-  index: number;
-  previousHash: string;
-  timestamp: number;
-  data: string;
-}
+
 interface SocketPortPair {
   port: number;
   socket: WebSocket;
 }
+
 export class Node {
   private port: number;
 
@@ -205,12 +202,14 @@ export class Node {
           console.log(chain.length);
           if (this.hasBlockChain) {
             let tempChain: Block[] = [];
-            chain.forEach((block: BlockData) => {
+            chain.forEach((block: IBlock) => {
               let b = new Block(
                 block.index,
                 block.previousHash,
                 block.timestamp,
-                block.data
+                block.data,
+                block.difficulty,
+                block.nonce
               );
               tempChain.push(b);
             });
@@ -252,12 +251,14 @@ export class Node {
             console.log("New block acquired");
             const rawBlock = JSON.parse(
               messageInnerData.innerData
-            ) as BlockData;
+            ) as IBlock;
             const newBlock = new Block(
               rawBlock.index,
               rawBlock.previousHash,
               rawBlock.timestamp,
-              rawBlock.data
+              rawBlock.data,
+              rawBlock.difficulty,
+              rawBlock.nonce
             );
             this.blockChain.addBlock(newBlock);
           }

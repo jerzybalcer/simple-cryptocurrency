@@ -17,7 +17,9 @@ export class BlocksDatabase {
                 blockData.index,
                 blockData.previousHash,
                 blockData.timestamp,
-                blockData.data
+                blockData.data,
+                blockData.difficulty,
+                blockData.nonce
             );
 
             if (!block.hasValidStructure()) {

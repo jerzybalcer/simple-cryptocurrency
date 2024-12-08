@@ -3,13 +3,16 @@ import { BlocksDatabase } from "./BlocksDatabase.js";
 
 export class Blockchain {
   private chain: Block[];
-
-  private genesisBlock: Block = new Block(
+  private readonly genesisBlock: Block = new Block(
     0,
     "",
     1731602440343,
-    "Genesis Block"
+    "Genesis Block",
+    1,
+    0
   );
+  private readonly BlockGenerationIntervalMs: number = 10000;
+  private readonly DifficultyAdjustmentIntervalBlocks: number = 10;
 
   constructor() {
     this.chain = BlocksDatabase.load();
@@ -29,11 +32,18 @@ export class Blockchain {
 
   generateNextBlock(blockData: string): Block {
     const previousBlock: Block = this.getLatestBlock();
+    const nextIndex = previousBlock.index + 1;
+    const nextTimestamp = new Date().getTime();
+
+    const nonce = this.findNewBlockNonce(nextIndex, previousBlock.hash, nextTimestamp, blockData);
+
     const newBlock: Block = new Block(
-      previousBlock.index + 1,
+      nextIndex,
       previousBlock.hash,
-      new Date().getTime(),
-      blockData
+      nextTimestamp,
+      blockData,
+      this.getDifficulty(),
+      nonce
     );
 
     this.addBlock(newBlock);
@@ -41,6 +51,59 @@ export class Blockchain {
     BlocksDatabase.save(this.chain);
 
     return newBlock;
+  }
+
+  private findNewBlockNonce(nextIndex: number, previousHash: string, nextTimestamp: number, blockData: string): number {
+    let nonce = 0;
+
+    while(!this.hashMatchesDifficulty
+      (Block.calculateHash(nextIndex, previousHash, nextTimestamp, blockData, this.getDifficulty(), nonce))
+    ) 
+    {
+      nonce++;
+    }
+
+    return nonce;
+  }
+
+  private getDifficulty(): number {
+    const latestBlock: Block = this.chain[this.chain.length - 1];
+
+    if (latestBlock.index % this.DifficultyAdjustmentIntervalBlocks === 0 && latestBlock.index !== 0) {
+
+      const lastAdjustedBlock: Block = this.chain[this.chain.length - this.DifficultyAdjustmentIntervalBlocks];
+      const timeExpected: number = this.BlockGenerationIntervalMs * this.DifficultyAdjustmentIntervalBlocks;
+      const timeTaken: number = latestBlock.timestamp - lastAdjustedBlock.timestamp;
+
+      if (timeTaken < timeExpected / 2) {
+        return lastAdjustedBlock.difficulty + 1;
+      } 
+      else if (timeTaken > timeExpected * 2) {
+        return lastAdjustedBlock.difficulty - 1;
+      } 
+      else {
+        return lastAdjustedBlock.difficulty;
+      }
+    } 
+    else {
+      return latestBlock.difficulty;
+    }
+  }
+
+  private hashMatchesDifficulty(hash: string): boolean {
+    const hashString: string = atob(hash);
+
+    const hashCharsCodesBinary = new Array(hashString.length);
+
+    for (let i = 0; i < hashCharsCodesBinary.length; i++) {
+        const characterCode = hashString.charCodeAt(i);
+        hashCharsCodesBinary[i] = characterCode.toString(2);
+    }
+
+    const hashBinary = hashCharsCodesBinary.join('');
+
+    const requiredPrefix: string = '0'.repeat(this.getDifficulty());
+    return hashBinary.startsWith(requiredPrefix);
   }
 
   private isNewBlockValid(newBlock: Block, previousBlock: Block): boolean {
@@ -57,6 +120,11 @@ export class Blockchain {
     }
 
     if (newBlock.calculateHash() !== newBlock.hash) {
+      return false;
+    }
+
+    if(previousBlock.timestamp - 60*1000 > newBlock.timestamp
+        && newBlock.timestamp - 60*1000 > new Date().getTime()) {
       return false;
     }
 
@@ -98,13 +166,10 @@ export class Blockchain {
 
     this.chain = newChain;
 
-    // TODO: broadcast new chain to other nodes
     return this.chain;
   };
 
   public hasValidStructure(block: Block): boolean {
-    console.log(block instanceof Block); // Powinno zwrócić `true`
-    console.log(typeof block.hasValidStructure); // Powinno zwrócić `function`
     return block.hasValidStructure();
   }
 }
