@@ -155,18 +155,24 @@ export class Blockchain {
     return true;
   };
 
-  replaceChain = (newChain: Block[]): Block[] => {
+  public replaceChain = (newChain: Block[]): Block[] => {
     if (!this.isOtherChainMatching(newChain)) {
       throw Error("New chain is invalid");
     }
 
-    if (newChain.length <= this.chain.length) {
-      throw Error("New chain should is not longer");
+    if (this.getAccumulatedDifficulty(newChain) <= this.getAccumulatedDifficulty(this.chain)) {
+      throw Error("New chain should have bigger accumulated difficulty");
     }
 
     this.chain = newChain;
 
     return this.chain;
+  };
+
+  private getAccumulatedDifficulty = (chain: Block[]): number => {
+    return this.chain
+        .map((block) => Math.pow(2, block.difficulty))
+        .reduce((a, b) => a + b);
   };
 
   public hasValidStructure(block: Block): boolean {
