@@ -170,7 +170,7 @@ export class Blockchain {
   };
 
   private getAccumulatedDifficulty = (chain: Block[]): number => {
-    return this.chain
+    return chain
         .map((block) => Math.pow(2, block.difficulty))
         .reduce((a, b) => a + b);
   };
