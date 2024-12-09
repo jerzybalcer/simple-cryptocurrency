@@ -22,8 +22,6 @@ export class Block implements IBlock {
     }
 
     static calculateHash(index: number, previousHash: string, timestamp: number, data: string, difficulty: number, nonce: number): string {
-        console.log(nonce)
-        console.log(Cryptography.hashUsingSHA256(index + previousHash + timestamp + data + difficulty + nonce))
         return Cryptography.hashUsingSHA256(index + previousHash + timestamp + data + difficulty + nonce);
     }
 

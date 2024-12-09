@@ -46,6 +46,8 @@ export class Blockchain {
       nonce
     );
 
+    console.log('New block mined:', newBlock);
+
     this.addBlock(newBlock);
 
     BlocksDatabase.save(this.chain);
@@ -60,6 +62,7 @@ export class Blockchain {
       (Block.calculateHash(nextIndex, previousHash, nextTimestamp, blockData, this.getDifficulty(), nonce))
     ) 
     {
+      console.log('Mining... Nonce:', nonce);
       nonce++;
     }
 
