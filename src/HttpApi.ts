@@ -10,11 +10,15 @@ export class HttpApi {
     node: Node
   ) => {
     const app = express();
+
     app.use(express.json());
+
     node.passBlockchain(blockchain);
+
     app.get("/blocks", (_: Request, response: Response) => {
       response.send(blockchain.getBlocks());
     });
+
     app.get("/requestBlockchain", (_: Request, response: Response) => {
         node.requestBlockchain();
         response.send(blockchain.getBlocks());
@@ -28,7 +32,6 @@ export class HttpApi {
 
       const newBlock: Block = blockchain.generateNextBlock(request.body.data);
 
-      // TODO: broadcast new block to other nodes
       node.broadcastBlock(newBlock);
 
       response.status(200).send(newBlock);
