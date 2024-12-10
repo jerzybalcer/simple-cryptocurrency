@@ -2,15 +2,17 @@ import express, { Request, Response } from "express";
 import { Blockchain } from "./blockchain/Blockchain.js";
 import { Block } from "./blockchain/Block.js";
 import { Node } from "./Node.js";
+import { Wallet } from "./wallet/Wallet.js";
 
 export class HttpApi {
   static initHttpServer = (
     port: number,
     blockchain: Blockchain,
-    node: Node
+    node: Node,
+    wallet: Wallet
   ) => {
     const app = express();
-
+    
     app.use(express.json());
 
     node.passBlockchain(blockchain);
@@ -29,11 +31,8 @@ export class HttpApi {
         response.status(400).send("Invalid block data");
         return;
       }
-
       const newBlock: Block = blockchain.generateNextBlock(request.body.data);
-
       node.broadcastBlock(newBlock);
-
       response.status(200).send(newBlock);
     });
 

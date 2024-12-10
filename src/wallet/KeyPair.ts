@@ -26,13 +26,15 @@ export class KeyPair {
         return new KeyPair(publicKey, encryptedPrivateKey, iv, salt, tag);
     }
 
-    getAddress(): string {
+    public getAddress(): string {
         return Cryptography.hashUsingSHA256(this.publicKey, 'base64');
     }
+    public getPublicKey(): string {
+        return this.publicKey;
+    }
 
-    getDecryptedPrivateKey(password: string): string {
+    public getDecryptedPrivateKey(password: string): string {
         const { secret } = Cryptography.generateSecretFromPassword(password, this.salt);
-
         return Cryptography.decryptUsingAES(this.encryptedPrivateKey, secret, this.initializationVector, this.tag);
     }
 }
