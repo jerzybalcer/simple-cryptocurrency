@@ -1,6 +1,6 @@
 import { KeyPair } from "./KeyPair.js";
 import { KeyPairsDatabase } from "./KeyPairsDatabase.js";
-import { Transaction, TransactionHandler, TransactionInput, TransactionOutput, UnspentOutputTransactions } from "../blockchain/Transactions.js";
+import { Transaction, TransactionHandler, TransactionInput, UnspentOutputTransactions } from "../blockchain/Transactions.js";
 
 export class Wallet {
   public tranHandler = new TransactionHandler();
@@ -54,7 +54,7 @@ export class Wallet {
   createNewTransaction = (
     receiverAddress: string,
     amount: number,
-    privateKey: string,
+    password: string,
     unspentTxOuts: UnspentOutputTransactions[]
   ): Transaction => {
     const myAddress: string = this.getPublicKey();
@@ -84,7 +84,8 @@ export class Wallet {
       txIn.signature = this.tranHandler.signTxIn(
         tx,
         index,
-        privateKey,
+        this.keyPairs[0],
+        password,
         unspentTxOuts
       );
       return txIn;

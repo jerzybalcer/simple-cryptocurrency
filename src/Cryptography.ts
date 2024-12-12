@@ -54,4 +54,21 @@ export class Cryptography {
     static hashUsingSHA256(valueToHash: string, inputEncoding: crypto.Encoding = 'utf8') {
         return crypto.createHash('sha256').update(valueToHash, inputEncoding).digest('base64');
     }
+
+    static signUsingECDSA(valueToSign: string, privateKey: string): string {
+        const sign = crypto.createSign('SHA256');
+        sign.update(valueToSign);
+        sign.end();
+
+        const signature = sign.sign(privateKey, 'base64');
+        return signature;
+    }
+
+    static verifyUsingECDSA(valueToVerify: string, signature: string, publicKey: string): boolean {
+        const verify = crypto.createVerify('SHA256');
+        verify.update(valueToVerify);
+        verify.end();
+
+        return verify.verify(publicKey, signature, 'base64');
+    }
 }

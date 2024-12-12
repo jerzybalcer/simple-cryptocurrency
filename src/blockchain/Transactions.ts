@@ -1,11 +1,8 @@
 import { Cryptography } from "../Cryptography";
-import * as ecdsa from "elliptic";
-import * as crypto from "crypto";
-import * as lod from "lodash";
 import { Block } from "./Block";
+import { KeyPair } from "../wallet/KeyPair";
 
 const COINBASE_AMOUNT = 10;
-const ec = new ecdsa.ec("secp256k1");
 
 export class UnspentOutputTransactions {
   // Class for unspent outputs, that are used to calculated how much coin each private key owns
@@ -253,10 +250,8 @@ export class TransactionHandler {
       return false;
     }
     const address = referencedUTxOut.address;
-    // Create key from public address (becuase it is hashed)
-    // And then check if decoded txIn.signature equals transaction.id
-    const key = ec.keyFromPublic(address, "hex");
-    return key.verify(transaction.id, txIn.signature);
+    // Check if decoded txIn.signature equals transaction.id
+    return Cryptography.verifyUsingECDSA(transaction.id, txIn.signature, address);
   }
   // Finds amount needed for transaction,
   // references findUsnpentOutputs
@@ -366,7 +361,8 @@ export class TransactionHandler {
   signTxIn(
     transaction: Transaction,
     txInIndex: number,
-    privateKey: string,
+    keyPair: KeyPair,
+    password: string,
     aUnspentTxOuts: UnspentOutputTransactions[]
   ): string {
     const txIn: TransactionInput = transaction.txIns[txInIndex];
@@ -380,7 +376,7 @@ export class TransactionHandler {
     }
 
     const referencedAddress = referencedUnspentTxOut.address;
-    if (this.getPublicKey(privateKey) !== referencedAddress) {
+    if (keyPair.publicKey !== referencedAddress) {
       console.log(
         "trying to sign an input with private" +
           " key that does not match the address that is referenced in txIn"
@@ -388,8 +384,7 @@ export class TransactionHandler {
       throw Error();
     }
 
-    const key = ec.keyFromPrivate(privateKey, "hex");
-    const signature: string = this.toHexString(key.sign(dataToSign).toDER());
+    const signature = Cryptography.signUsingECDSA(dataToSign, keyPair.getDecryptedPrivateKey(password));
 
     return signature;
   }
@@ -435,13 +430,6 @@ export class TransactionHandler {
     return Array.from(byteArray, (byte: any) => {
       return ("0" + (byte & 0xff).toString(16)).slice(-2);
     }).join("");
-  }
-  // Given private key, get public one
-  public getPublicKey(aPrivateKey: string): string {
-    return ec
-      .keyFromPrivate(aPrivateKey, "hex")
-      .getPublic()
-      .encode("hex", false);
   }
 
   // Check if structure of transaction ( types) are correct

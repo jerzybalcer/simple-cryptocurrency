@@ -26,7 +26,8 @@ export class KeyPair {
     }
 
     public getAddress(): string {
-        return Cryptography.hashUsingSHA256(this.publicKey, 'base64');
+        // For now address is just public key, probably it should be changed in the future
+        return this.publicKey;
     }
 
     public getDecryptedPrivateKey(password: string): string {
