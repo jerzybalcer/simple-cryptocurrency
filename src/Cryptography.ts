@@ -48,7 +48,7 @@ export class Cryptography {
         let decryptedValue = decipher.update(valueToDecrypt, 'base64', 'base64');
         decryptedValue += decipher.final('base64');
 
-        return Buffer.from(decryptedValue, 'base64').toString('base64');
+        return Buffer.from(decryptedValue, 'base64').toString('base64')!;
     }
 
     static hashUsingSHA256(valueToHash: string, inputEncoding: crypto.Encoding = 'utf8') {

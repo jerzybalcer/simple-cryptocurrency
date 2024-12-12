@@ -38,7 +38,7 @@ export class Wallet {
     return this.keyPairs[0];
   }
 
-  getBalance(
+  public getBalance(
     address: string,
     unspentTxOuts: UnspentOutputTransactions[]
   ): number {
@@ -51,17 +51,16 @@ export class Wallet {
     return amount;
   }
 
-  createNewTransaction = (
+  public createNewTransaction (
     receiverAddress: string,
     amount: number,
     password: string,
     unspentTxOuts: UnspentOutputTransactions[]
-  ): Transaction => {
+  ): Transaction {
     const myAddress: string = this.getPublicKey();
     const myUnspentTxOuts = unspentTxOuts.filter(
       (uTxO: UnspentOutputTransactions) => uTxO.address === myAddress
     );
-
     const { includedUnspentTxOuts, leftOverAmount } =
       this.tranHandler.findTransactionOutputsForAmount(amount, myUnspentTxOuts);
 

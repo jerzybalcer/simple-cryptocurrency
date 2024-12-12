@@ -2,6 +2,13 @@ import WebSocket, { WebSocketServer } from "ws";
 import { Blockchain } from "./blockchain/Blockchain.js";
 import { Block } from "./blockchain/Block.js";
 import { IBlock } from "./blockchain/IBlock.js";
+import { Wallet } from "./wallet/Wallet.js";
+import {
+  Transaction,
+  TransactionHandler,
+  UnspentOutputTransactions,
+} from "./blockchain/Transactions.js";
+import _ from "lodash";
 
 interface Message {
   mode: string; // type of message, used to determine which action should be taken in handleMessage method
@@ -25,7 +32,6 @@ interface SocketPortPair {
 
 export class Node {
   private port: number;
-
   private server: WebSocketServer | null = null;
 
   private peers: SocketPortPair[] = []; // list of connected sockets
@@ -35,7 +41,11 @@ export class Node {
 
   private hasBlockChain = false;
   private blockChain: Blockchain = new Blockchain();
-
+  public linkedWallet: Wallet | undefined = undefined;
+  private pendingTransaction: Transaction[] = [];
+  private isMining = false;
+  // make checking and etc easier - also will stop wrong/falsified transaction from being processed
+  private txHandler = new TransactionHandler();
   constructor(port: number) {
     this.port = port;
     this.server = new WebSocketServer({ port: this.port });
@@ -58,6 +68,136 @@ export class Node {
 
   public getKnownPorts() {
     return this.knownPorts;
+  }
+
+  public broadcastTransaction(tr: Transaction) {
+    let preMessage = {
+      type: "start",
+      mode: "broadcastTransaction",
+      port: this.port,
+      data: tr,
+    };
+    let message = JSON.stringify(preMessage);
+    this.peers.forEach((peer) => {
+      console.log("Sending broadcast about new transaction");
+      peer.socket.send(message);
+    });
+  }
+
+  public receiveTransaction(tr: Transaction): boolean {
+    //Check if transaction is not using resources already referenced in pending transaction list.
+    // returns boolean but it will not stop node from propagating the message further - this is so that
+    // one node doesn't block all transmisions, if for some reason it's pending transaction list is bugged
+    if (this.checkTransaction(tr)) {
+      // If this is node with linked wallet, add new pending transaction to be processed.
+      if (this.hasBlockChain) {
+        this.pendingTransaction.push(tr);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // Checks if transaction doesn't reference already used resources
+  // DOESN'T CHECK OTHER STUFF - THIS IS DONE BEFORE THE BLOCK IS MINED
+  // This is deliberate decision
+  private checkTransaction(tr: Transaction): boolean {
+    let flag = true;
+    this.pendingTransaction.forEach((pendingTr) => {
+      pendingTr.txIns.forEach((input) => {
+        tr.txIns.forEach((inp) => {
+          if (inp.txOutId === input.txOutId) {
+            flag = false;
+          }
+        });
+      });
+    });
+    return flag;
+  }
+
+  private processTransactionFromList(tr: Transaction) {
+    // Delete pending transaction from array - mine or not, it will not be used anymore
+    this.pendingTransaction.shift();
+    let index = this.blockChain.getLatestBlock().index;
+    let coinBaseTransaction = this.txHandler.getCoinbaseTransaction(
+      this.linkedWallet!.getAddress(),
+      index
+    );
+    let transactionBlock = [coinBaseTransaction, tr];
+    // Check if transaction is even valid before mining it - we don't want to lose time mining false transactions
+    if (
+      this.txHandler.processTransactions(
+        transactionBlock,
+        this.txHandler.createUTXOList(this.blockChain.getBlocks()),
+        index,
+        false
+      )
+    ) {
+      // transaction is valid, time to mine
+      console.log("Starting mining operation, keep your distance");
+      this.isMining = true;
+      let newBlock = this.blockChain.generateNextBlock(transactionBlock);
+      this.isMining = false;
+      this.broadcastBlock(newBlock);
+    }
+  }
+  public enableMining(period: number) {
+    this.transactionChecker(period);
+  }
+
+  private getPendingTransactions(): Transaction[] {
+    return this.pendingTransaction;
+  }
+
+  private updateTransactionPool(unspentTxOuts: UnspentOutputTransactions[]) {
+    const invalidTxs = [];
+    let utxoList = this.txHandler.createUTXOList(this.blockChain.getBlocks());
+
+    for (const tx of this.pendingTransaction) {
+      for (const txIn of tx.txIns) {
+        const referencedUTxOut: UnspentOutputTransactions | undefined =
+          unspentTxOuts.find(
+            (uTxO) =>
+              uTxO.txOutId === txIn.txOutId &&
+              uTxO.txOutIndex === txIn.txOutIndex
+          );
+        if (!referencedUTxOut) {
+          invalidTxs.push(tx);
+        }
+      }
+    }
+    if (invalidTxs.length > 0) {
+      console.log(
+        "removing invalid transactions from pending transactions: %s"
+      );
+      this.pendingTransaction = _.without(
+        this.pendingTransaction,
+        ...invalidTxs
+      );
+    }
+  }
+
+  private transactionChecker(intervalMs: number) {
+    // Periodic checking for transactions to be processed
+    setInterval(async () => {
+      try {
+        this.updateTransactionPool(
+          this.txHandler.createUTXOList(this.blockChain.getBlocks())
+        );
+        let pendingTransactions = this.getPendingTransactions();
+
+        if (pendingTransactions.length === 0) {
+          console.log("No pending transactions to process.");
+          return;
+        }
+        if (!this.isMining) {
+          this.processTransactionFromList(pendingTransactions[0]);
+        }
+      } catch (error) {
+        console.error("Error while processing transactions:", error);
+      }
+    }, intervalMs);
   }
 
   // pass blockchain to the node from https API - used for initialization of node only
@@ -246,30 +386,54 @@ export class Node {
           break;
         case "broadcastBlock":
           console.log("Node broadcast");
+          // With new blocks and transactions  we should now check if they are valid herer
           let messageInnerData = data.data as AdvancedMessage;
-          if (this.hasBlockChain) {
-            console.log("New block acquired");
-            const rawBlock = JSON.parse(
-              messageInnerData.innerData
-            ) as IBlock;
-            const newBlock = new Block(
-              rawBlock.index,
-              rawBlock.previousHash,
-              rawBlock.timestamp,
-              rawBlock.data,
-              rawBlock.difficulty,
-              rawBlock.nonce
-            );
-            this.blockChain.addBlock(newBlock);
+
+          const rawBlock = JSON.parse(messageInnerData.innerData) as IBlock;
+          const newBlock = new Block(
+            rawBlock.index,
+            rawBlock.previousHash,
+            rawBlock.timestamp,
+            rawBlock.data,
+            rawBlock.difficulty,
+            rawBlock.nonce
+          );
+          let utxo = this.txHandler.createUTXOList(this.blockChain.getBlocks());
+          let flag = this.txHandler.processTransactions(
+            newBlock.data,
+            utxo,
+            newBlock.index,
+            true
+          );
+          // continue sending block ONLY IF it is correct - either way stop, to stop spreading errors
+          if (flag) {
+            if (this.hasBlockChain) {
+              console.log("New block acquired");
+              this.blockChain.addBlock(newBlock);
+            }
+            let broadcastBLockMessage = JSON.stringify(data);
+            if (data.data.port !== this.port) {
+              this.peers.forEach((peer) => {
+                if (peer.socket !== sourceSocket) {
+                  peer.socket.send(broadcastBLockMessage);
+                }
+              });
+            }
+          }else {
+            console.log("For some reason block was invalid - it might expired or any other reason")
           }
-          let broadcastBLockMessage = JSON.stringify(data);
-          if (data.data.port !== this.port) {
-            this.peers.forEach((peer) => {
-              if (peer.socket !== sourceSocket) {
-                peer.socket.send(broadcastBLockMessage);
-              }
-            });
-          }
+
+          break;
+        case "broadcastTransaction":
+          let trData = data.data as Transaction;
+          this.receiveTransaction(trData);
+          this.peers.forEach((peer) => {
+            if (peer.socket !== sourceSocket) {
+              console.log("Passing along the broadcast about new transaction");
+              peer.socket.send(JSON.stringify(data));
+            }
+          });
+          break;
       }
     } else if (data.type === "success") {
       switch (data.mode) {

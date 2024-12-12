@@ -31,7 +31,32 @@ export class KeyPair {
     }
 
     public getDecryptedPrivateKey(password: string): string {
-        const { secret } = Cryptography.generateSecretFromPassword(password, this.salt);
-        return Cryptography.decryptUsingAES(this.encryptedPrivateKey, secret, this.initializationVector, this.tag);
+        // const { secret } = Cryptography.generateSecretFromPassword(password, this.salt);
+        // return Cryptography.decryptUsingAES(this.encryptedPrivateKey, secret, this.initializationVector, this.tag);
+
+            const { secret } = Cryptography.generateSecretFromPassword(
+              password,
+              this.salt
+            );
+            const decryptedKey = Cryptography.decryptUsingAES(
+              this.encryptedPrivateKey,
+              secret,
+              this.initializationVector,
+              this.tag
+            );
+             if (!decryptedKey) {
+               throw new Error(
+                 "Decryption failed. Ensure all inputs are valid and not null."
+               );
+             }else {
+               // Ensure the key is returned in PEM format
+               return (
+                 `-----BEGIN PRIVATE KEY-----\n` +
+                 decryptedKey.match(/.{1,64}/g)?.join("\n") +
+                 `\n-----END PRIVATE KEY-----`
+               );
+             }
+            
+           
     }
 }

@@ -3,6 +3,7 @@ import { Blockchain } from "./blockchain/Blockchain.js";
 import { Block } from "./blockchain/Block.js";
 import { Node } from "./Node.js";
 import { Wallet } from "./wallet/Wallet.js";
+import { UnspentOutputTransactions } from "./blockchain/Transactions.js";
 
 export class HttpApi {
   static initHttpServer = (
@@ -12,18 +13,46 @@ export class HttpApi {
     wallet: Wallet
   ) => {
     const app = express();
-    
+    let utxoList: UnspentOutputTransactions[] = [];
+    utxoList = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
     app.use(express.json());
 
     node.passBlockchain(blockchain);
+    node.linkedWallet = wallet;
 
     app.get("/blocks", (_: Request, response: Response) => {
       response.send(blockchain.getBlocks());
     });
+    app.get("/utxoList", (_: Request, res: Response) => {
+      res.send(utxoList);
+    });
+    app.get("/enableMining", (_: Request, res: Response) => {
+      // Set three second period for checking waitning list
+      node.enableMining(3000);
+      res.send();
+    });
+
+    app.post("/makeTransaction", (request: Request, response: Response) => {
+      //Make transaction to address specified in request - no cheats allowed.
+
+      let tr = wallet.createNewTransaction(
+        request.body.receiverAddress,
+        request.body.amount,
+        request.body.password,
+        utxoList
+      );
+      node.broadcastTransaction(tr);
+      response.send(200);
+    });
+
+    app.get("/getAddress", (_: Request, response: Response) => {
+      // Get node address - this is a bit clunky but easier to implement this way
+      response.status(200).send(wallet.getAddress());
+    });
 
     app.get("/requestBlockchain", (_: Request, response: Response) => {
-        node.requestBlockchain();
-        response.send(blockchain.getBlocks());
+      node.requestBlockchain();
+      response.send(blockchain.getBlocks());
     });
 
     app.post("/mineBlock", (request: Request, response: Response) => {

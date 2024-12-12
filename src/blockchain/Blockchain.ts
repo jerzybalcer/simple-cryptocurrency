@@ -1,7 +1,10 @@
 import { Block } from "./Block.js";
 import { BlocksDatabase } from "./BlocksDatabase.js";
-import { Transaction } from "./Transactions.js";
-
+import {
+  Transaction,
+  TransactionOutput,
+  externalGetTransactionId,
+} from "./Transactions.js";
 export class Blockchain {
   private chain: Block[];
   private readonly genesisBlock: Block = new Block(
@@ -15,10 +18,23 @@ export class Blockchain {
   private readonly BlockGenerationIntervalMs: number = 10000;
   private readonly DifficultyAdjustmentIntervalBlocks: number = 10;
 
-  constructor() {
+  constructor(address: string) {
     this.chain = BlocksDatabase.load();
 
     if (this.chain.length === 0) {
+      const genesisTx = new Transaction();
+
+      // Genesis transactions have no inputs
+
+        const genesisOutput = new TransactionOutput(address, 100); // Mint 100 coins
+      
+     
+      genesisTx.txOuts = [genesisOutput];
+
+      // Generate the transaction ID
+      genesisTx.id = externalGetTransactionId(genesisTx);
+      this.genesisBlock.data = [genesisTx];
+
       this.chain = [this.genesisBlock];
     }
   }
@@ -36,7 +52,12 @@ export class Blockchain {
     const nextIndex = previousBlock.index + 1;
     const nextTimestamp = new Date().getTime();
 
-    const nonce = this.findNewBlockNonce(nextIndex, previousBlock.hash, nextTimestamp, blockData);
+    const nonce = this.findNewBlockNonce(
+      nextIndex,
+      previousBlock.hash,
+      nextTimestamp,
+      blockData
+    );
 
     const newBlock: Block = new Block(
       nextIndex,
@@ -47,7 +68,7 @@ export class Blockchain {
       nonce
     );
 
-    console.log('New block mined:', newBlock);
+    console.log("New block mined:", newBlock);
 
     this.addBlock(newBlock);
 
@@ -56,14 +77,27 @@ export class Blockchain {
     return newBlock;
   }
 
-  private findNewBlockNonce(nextIndex: number, previousHash: string, nextTimestamp: number, blockData: Transaction[]): number {
+  private findNewBlockNonce(
+    nextIndex: number,
+    previousHash: string,
+    nextTimestamp: number,
+    blockData: Transaction[]
+  ): number {
     let nonce = 0;
 
-    while(!this.hashMatchesDifficulty
-      (Block.calculateHash(nextIndex, previousHash, nextTimestamp, blockData, this.getDifficulty(), nonce))
-    ) 
-    {
-      console.log('Mining... Nonce:', nonce);
+    while (
+      !this.hashMatchesDifficulty(
+        Block.calculateHash(
+          nextIndex,
+          previousHash,
+          nextTimestamp,
+          blockData,
+          this.getDifficulty(),
+          nonce
+        )
+      )
+    ) {
+      console.log("Mining... Nonce:", nonce);
       nonce++;
     }
 
@@ -73,40 +107,43 @@ export class Blockchain {
   private getDifficulty(): number {
     const latestBlock: Block = this.chain[this.chain.length - 1];
 
-    if (latestBlock.index % this.DifficultyAdjustmentIntervalBlocks === 0 && latestBlock.index !== 0) {
-
-      const lastAdjustedBlock: Block = this.chain[this.chain.length - this.DifficultyAdjustmentIntervalBlocks];
-      const timeExpected: number = this.BlockGenerationIntervalMs * this.DifficultyAdjustmentIntervalBlocks;
-      const timeTaken: number = latestBlock.timestamp - lastAdjustedBlock.timestamp;
+    if (
+      latestBlock.index % this.DifficultyAdjustmentIntervalBlocks === 0 &&
+      latestBlock.index !== 0
+    ) {
+      const lastAdjustedBlock: Block =
+        this.chain[this.chain.length - this.DifficultyAdjustmentIntervalBlocks];
+      const timeExpected: number =
+        this.BlockGenerationIntervalMs *
+        this.DifficultyAdjustmentIntervalBlocks;
+      const timeTaken: number =
+        latestBlock.timestamp - lastAdjustedBlock.timestamp;
 
       if (timeTaken < timeExpected / 2) {
         return lastAdjustedBlock.difficulty + 1;
-      } 
-      else if (timeTaken > timeExpected * 2) {
+      } else if (timeTaken > timeExpected * 2) {
         return lastAdjustedBlock.difficulty - 1;
-      } 
-      else {
+      } else {
         return lastAdjustedBlock.difficulty;
       }
-    } 
-    else {
+    } else {
       return latestBlock.difficulty;
     }
   }
 
   private hashMatchesDifficulty(hash: string): boolean {
-    const hashString: string = atob(hash);
+    const hashString: string = Buffer.from(hash, "base64").toString("utf-8"); //atob(hash);
 
     const hashCharsCodesBinary = new Array(hashString.length);
 
     for (let i = 0; i < hashCharsCodesBinary.length; i++) {
-        const characterCode = hashString.charCodeAt(i);
-        hashCharsCodesBinary[i] = characterCode.toString(2);
+      const characterCode = hashString.charCodeAt(i);
+      hashCharsCodesBinary[i] = characterCode.toString(2);
     }
 
-    const hashBinary = hashCharsCodesBinary.join('');
+    const hashBinary = hashCharsCodesBinary.join("");
 
-    const requiredPrefix: string = '0'.repeat(this.getDifficulty());
+    const requiredPrefix: string = "0".repeat(this.getDifficulty());
     return hashBinary.startsWith(requiredPrefix);
   }
 
@@ -127,8 +164,10 @@ export class Blockchain {
       return false;
     }
 
-    if(previousBlock.timestamp - 60*1000 > newBlock.timestamp
-        && newBlock.timestamp - 60*1000 > new Date().getTime()) {
+    if (
+      previousBlock.timestamp - 60 * 1000 > newBlock.timestamp &&
+      newBlock.timestamp - 60 * 1000 > new Date().getTime()
+    ) {
       return false;
     }
 
@@ -164,7 +203,10 @@ export class Blockchain {
       throw Error("New chain is invalid");
     }
 
-    if (this.getAccumulatedDifficulty(newChain) <= this.getAccumulatedDifficulty(this.chain)) {
+    if (
+      this.getAccumulatedDifficulty(newChain) <=
+      this.getAccumulatedDifficulty(this.chain)
+    ) {
       throw Error("New chain should have bigger accumulated difficulty");
     }
 
@@ -175,7 +217,7 @@ export class Blockchain {
 
   private getAccumulatedDifficulty = (chain: Block[]): number => {
     return chain
-        .map((block) => Math.pow(2, block.difficulty))
-        .reduce((a, b) => a + b);
+      .map((block) => Math.pow(2, block.difficulty))
+      .reduce((a, b) => a + b);
   };
 }

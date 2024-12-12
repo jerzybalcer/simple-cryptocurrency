@@ -1,4 +1,4 @@
-import { Cryptography } from "../Cryptography";
+import { Cryptography } from "../Cryptography.js";
 import { Block } from "./Block";
 import { KeyPair } from "../wallet/KeyPair";
 
@@ -57,6 +57,9 @@ export class TransactionHandler {
   // Handles all operations related to transactions
 
   // Create UTXO list - should be done every time a blockchain is updated
+
+
+
   public createUTXOList(blockchain: Block[]): UnspentOutputTransactions[] {
     let utxoList: UnspentOutputTransactions[] = [];
     const findIndex = (
@@ -130,6 +133,8 @@ export class TransactionHandler {
   ) {
     let currentAmount = 0;
     const includedUnspentTxOuts = [];
+    console.log(myUnspentTxOuts);
+    console.log(myUnspentTxOuts);
     for (const myUnspentTxOut of myUnspentTxOuts) {
       includedUnspentTxOuts.push(myUnspentTxOut);
       currentAmount = currentAmount + myUnspentTxOut.amount;
@@ -251,7 +256,11 @@ export class TransactionHandler {
     }
     const address = referencedUTxOut.address;
     // Check if decoded txIn.signature equals transaction.id
-    return Cryptography.verifyUsingECDSA(transaction.id, txIn.signature, address);
+    return Cryptography.verifyUsingECDSA(
+      transaction.id,
+      txIn.signature,
+      address
+    );
   }
   // Finds amount needed for transaction,
   // references findUsnpentOutputs
@@ -384,7 +393,10 @@ export class TransactionHandler {
       throw Error();
     }
 
-    const signature = Cryptography.signUsingECDSA(dataToSign, keyPair.getDecryptedPrivateKey(password));
+    const signature = Cryptography.signUsingECDSA(
+      dataToSign,
+      keyPair.getDecryptedPrivateKey(password)
+    );
 
     return signature;
   }
@@ -411,7 +423,8 @@ export class TransactionHandler {
   public processTransactions(
     aTransactions: Transaction[],
     aUnspentTxOuts: UnspentOutputTransactions[],
-    blockIndex: number
+    blockIndex: number,
+    updateUTXOs: boolean = false
   ) {
     if (!this.isValidTransactionsStructure(aTransactions)) {
       return null;
@@ -423,7 +436,7 @@ export class TransactionHandler {
       console.log("invalid block transactions");
       return null;
     }
-    return this.updateUnspentTxOuts(aTransactions, aUnspentTxOuts);
+    return updateUTXOs ?this.updateUnspentTxOuts(aTransactions, aUnspentTxOuts) : true;
   }
 
   public toHexString(byteArray: any): string {
@@ -525,3 +538,15 @@ export class TransactionHandler {
     return true;
   };
 }
+
+ export const externalGetTransactionId = (transaction: Transaction): string => {
+    const txInContent: string = transaction.txIns
+      .map((txIn: TransactionInput) => txIn.txOutId + txIn.txOutIndex)
+      .reduce((a, b) => a + b, "");
+
+    const txOutContent: string = transaction.txOuts
+      .map((txOut: TransactionOutput) => txOut.address + txOut.amount)
+      .reduce((a, b) => a + b, "");
+
+    return Cryptography.hashUsingSHA256(txInContent + txOutContent).toString();
+  }
