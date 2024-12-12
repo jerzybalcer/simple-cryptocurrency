@@ -1,6 +1,5 @@
 import { Wallet } from "./Wallet.js";
 
-
 const wallet = new Wallet('bezpieczne hasło');
 
 const keyPair = wallet.getFirstAvailableKeyPair();

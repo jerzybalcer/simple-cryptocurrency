@@ -1,5 +1,6 @@
 import { Block } from "./Block.js";
 import { BlocksDatabase } from "./BlocksDatabase.js";
+import { Transaction } from "./Transactions.js";
 
 export class Blockchain {
   private chain: Block[];
@@ -7,7 +8,7 @@ export class Blockchain {
     0,
     "",
     1731602440343,
-    "Genesis Block",
+    [] as Transaction[], // TODO: Create correct block data for genesis block
     1,
     0
   );
@@ -30,7 +31,7 @@ export class Blockchain {
     return this.chain[this.chain.length - 1];
   }
 
-  generateNextBlock(blockData: string): Block {
+  generateNextBlock(blockData: Transaction[]): Block {
     const previousBlock: Block = this.getLatestBlock();
     const nextIndex = previousBlock.index + 1;
     const nextTimestamp = new Date().getTime();
@@ -55,7 +56,7 @@ export class Blockchain {
     return newBlock;
   }
 
-  private findNewBlockNonce(nextIndex: number, previousHash: string, nextTimestamp: number, blockData: string): number {
+  private findNewBlockNonce(nextIndex: number, previousHash: string, nextTimestamp: number, blockData: Transaction[]): number {
     let nonce = 0;
 
     while(!this.hashMatchesDifficulty
@@ -110,7 +111,7 @@ export class Blockchain {
   }
 
   private isNewBlockValid(newBlock: Block, previousBlock: Block): boolean {
-    if (!this.hasValidStructure(newBlock)) {
+    if (!newBlock.hasValidStructure()) {
       return false;
     }
 
@@ -177,8 +178,4 @@ export class Blockchain {
         .map((block) => Math.pow(2, block.difficulty))
         .reduce((a, b) => a + b);
   };
-
-  public hasValidStructure(block: Block): boolean {
-    return block.hasValidStructure();
-  }
 }

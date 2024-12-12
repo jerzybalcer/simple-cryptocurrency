@@ -1,6 +1,7 @@
 import { Blockchain } from "./blockchain/Blockchain.js";
 import { HttpApi } from "./HttpApi.js";
 import { Node } from "./Node.js";
+import { Wallet } from "./wallet/Wallet.js";
 
 const NodeDefaultPort = 3000;
 let HttpApiPort = 3333;
@@ -24,4 +25,4 @@ if (args.length === 4) {
   HttpApiPort = parseInt(args[4])
 }
 
-HttpApi.initHttpServer(HttpApiPort, new Blockchain(), node);
+HttpApi.initHttpServer(HttpApiPort, new Blockchain(), node, new Wallet("default_password"));

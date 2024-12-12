@@ -2,7 +2,6 @@ import { Cryptography } from "../Cryptography.js";
 import { IBlock } from "./IBlock.js";
 import { Transaction } from "./Transactions.js";
 
-
 export class Block implements IBlock {
     index: number;
     hash: string;

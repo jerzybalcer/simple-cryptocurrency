@@ -1,6 +1,5 @@
 import { Cryptography } from "../Cryptography.js";
 
-
 export class KeyPair {
     publicKey: string = "";
     encryptedPrivateKey: string = "";
@@ -28,9 +27,6 @@ export class KeyPair {
 
     public getAddress(): string {
         return Cryptography.hashUsingSHA256(this.publicKey, 'base64');
-    }
-    public getPublicKey(): string {
-        return this.publicKey;
     }
 
     public getDecryptedPrivateKey(password: string): string {
