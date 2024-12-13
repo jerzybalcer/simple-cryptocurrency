@@ -16,7 +16,7 @@ export class HttpApi {
     let utxoList: UnspentOutputTransactions[] = [];
     utxoList = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
     app.use(express.json());
-
+    console.log(blockchain.getBlocks());
     node.passBlockchain(blockchain);
     node.linkedWallet = wallet;
 
@@ -24,11 +24,18 @@ export class HttpApi {
       response.send(blockchain.getBlocks());
     });
     app.get("/utxoList", (_: Request, res: Response) => {
+      utxoList = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
       res.send(utxoList);
     });
     app.get("/enableMining", (_: Request, res: Response) => {
       // Set three second period for checking waitning list
       node.enableMining(3000);
+      res.send();
+    });
+    app.get("/getBalance", (_: Request, res: Response) => {
+      let adr = wallet.getAddress();
+      let utxo = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
+      console.log(wallet.getBalance(adr, utxo));
       res.send();
     });
 

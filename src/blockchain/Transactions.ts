@@ -456,6 +456,7 @@ export class TransactionHandler {
   // Checks individual transaction structure,
   // uses isValidTxInstructure, isValidTxOutStructure
   public isValidTransactionStructure(transaction: Transaction) {
+    const that = this;
     if (typeof transaction.id !== "string") {
       console.log("transactionId missing");
       return false;
@@ -465,8 +466,9 @@ export class TransactionHandler {
       return false;
     }
     if (
+      !Array.isArray(transaction.txIns) ||
       !transaction.txIns
-        .map(this.isValidTxInStructure)
+        .map(isValidTxInStructure)
         .reduce((a, b) => a && b, true)
     ) {
       return false;
@@ -479,7 +481,7 @@ export class TransactionHandler {
 
     if (
       !transaction.txOuts
-        .map(this.isValidTxOutStructure)
+        .map(isValidTxOutStructure)
         .reduce((a, b) => a && b, true)
     ) {
       return false;
@@ -487,58 +489,26 @@ export class TransactionHandler {
     return true;
   }
 
-  // Checks structure of transaction input
-  public isValidTxInStructure(txIn: TransactionInput): boolean {
-    if (txIn == null) {
-      console.log("txIn is null");
-      return false;
-    } else if (typeof txIn.signature !== "string") {
-      console.log("invalid signature type in txIn");
-      return false;
-    } else if (typeof txIn.txOutId !== "string") {
-      console.log("invalid txOutId type in txIn");
-      return false;
-    } else if (typeof txIn.txOutIndex !== "number") {
-      console.log("invalid txOutIndex type in txIn");
-      return false;
-    } else {
-      return true;
-    }
-  }
   // Checks structure of transaction output
-  public isValidTxOutStructure(txOut: TransactionOutput): boolean {
-    if (txOut == null) {
-      console.log("txOut is null");
-      return false;
-    } else if (typeof txOut.address !== "string") {
-      console.log("invalid address type in transaction output");
-      return false;
-    } else if (!this.isValidAddress(txOut.address)) {
-      console.log("invalid transaction output address");
-      return false;
-    } else if (typeof txOut.amount !== "number") {
-      console.log("invalid amount type in txOut");
-      return false;
-    } else {
-      return true;
-    }
-  }
-  // Checks if address is valid - length, hexcharacters /. etc
-  isValidAddress = (address: string): boolean => {
-    if (address.length !== 130) {
-      console.log("invalid public key length");
-      return false;
-    } else if (address.match("^[a-fA-F0-9]+$") === null) {
-      console.log("public key must contain only hex characters");
-      return false;
-    } else if (!address.startsWith("04")) {
-      console.log("public key must start with 04");
-      return false;
-    }
-    return true;
-  };
+  // public isValidTxOutStructure(txOut: TransactionOutput): boolean {
+  //   if (txOut == null) {
+  //     console.log("txOut is null");
+  //     return false;
+  //   } else if (typeof txOut.address !== "string") {
+  //     console.log("invalid address type in transaction output");
+  //     return false;
+  //   } else if (!isValidAddress(txOut.address)) {
+  //     console.log("invalid transaction output address");
+  //     return false;
+  //   } else if (typeof txOut.amount !== "number") {
+  //     console.log("invalid amount type in txOut");
+  //     return false;
+  //   } else {
+  //     return true;
+  //   }
+  // }
 }
-
+  
  export const externalGetTransactionId = (transaction: Transaction): string => {
     const txInContent: string = transaction.txIns
       .map((txIn: TransactionInput) => txIn.txOutId + txIn.txOutIndex)
@@ -549,4 +519,73 @@ export class TransactionHandler {
       .reduce((a, b) => a + b, "");
 
     return Cryptography.hashUsingSHA256(txInContent + txOutContent).toString();
+  }
+
+
+  // Checks structure of transaction input
+export const isValidTxInStructure = (txIn:TransactionInput) => {
+    if (txIn == null) {
+        console.log("txIn is null");
+        return false;
+    }
+    else if (typeof txIn.signature !== "string") {
+        console.log("invalid signature type in txIn");
+        return false;
+    }
+    else if (typeof txIn.txOutId !== "string") {
+        console.log("invalid txOutId type in txIn");
+        return false;
+    }
+    else if (typeof txIn.txOutIndex !== "number") {
+        console.log("invalid txOutIndex type in txIn");
+        return false;
+    }
+    else {
+        return true;
+    }
+};
+// Checks structure of transaction output
+   export const isValidTxOutStructure=(txOut:TransactionOutput):boolean =>{
+        if (txOut == null) {
+            console.log("txOut is null");
+            return false;
+        }
+        else if (typeof txOut.address !== "string") {
+            console.log("invalid address type in transaction output");
+            return false;
+        }
+        else if (!isValidAddress(txOut.address)) {
+            console.log("invalid transaction output address");
+            return false;
+        }
+        else if (typeof txOut.amount !== "number") {
+            console.log("invalid amount type in txOut");
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    //
+   // Checks if address is valid - length, hexcharacters /. etc
+  const isValidAddress = (address: string): boolean => {
+    console.log("CHecking address validity\n");
+    console.log(address);
+
+    // THIS is wrong to check - our address has 120 chars
+    // if (address.length !== 130) {
+    //   console.log("invalid public key length");
+    //   return false;
+    // } else 
+     if (address.match(/^[A-Za-z0-9+/=]+$/) === null) {
+       console.log("The address must contain only Base64 characters.");
+       return false;
+     }
+     // THis is for hexendcoded eliptic curve address - we have base64
+    //  } else if (!address.startsWith("04")) {
+    //    console.log("public key must start with 04");
+    //    return false;
+    //  }
+    return true;
   }

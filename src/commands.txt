@@ -1,1 +1,1 @@
-curl -X POST -H "Content-Type: application/json" -d '{"password": "default_password", "amount": 10, "receiverAddress": "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEUjt4WWMBtCK2fSegYS7C6IBle43MwPgRIWn96ecTf6VfLKBfR4hjISHG+eKiEug+h4Jjs3QxIswrgFQ9I+ZQOA=="}' http://localhost:3333/makeTransaction
+curl -X POST -H "Content-Type: application/json" -d '{"password": "default_password", "amount": 10, "receiverAddress": "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEotAKCWnTVqN6kf6nvuFDTH89CHoy2Bjg8+GYsX1rCySZW/TA3KR7DAgLsyBnruAZfD1fiu6zfVpK7hcUPdIqAA=="}' http://localhost:3333/makeTransaction

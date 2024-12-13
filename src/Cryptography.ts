@@ -60,6 +60,7 @@ export class Cryptography {
         sign.update(valueToSign);
         sign.end();
 
+    
         const signature = sign.sign(privateKey, 'base64');
         return signature;
     }
@@ -69,6 +70,9 @@ export class Cryptography {
         verify.update(valueToVerify);
         verify.end();
 
-        return verify.verify(publicKey, signature, 'base64');
+        // verify requires PEM format
+        const publicKeyPEM = `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`;
+        return verify.verify(publicKeyPEM, signature, 'base64');
+ 
     }
 }

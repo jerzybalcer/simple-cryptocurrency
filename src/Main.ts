@@ -6,6 +6,10 @@ import { Wallet } from "./wallet/Wallet.js";
 const NodeDefaultPort = 3000;
 let HttpApiPort = 3333;
 
+
+let wallet = new Wallet("default_password");
+let bc =  new Blockchain(wallet.getAddress());
+
 // Get Node Port from args
 const args = process.argv.slice();
 const nodePort = parseInt(args[2]);
@@ -24,5 +28,5 @@ if (args.length === 4) {
   node.joinNetwork(existingNodePort);
   HttpApiPort = parseInt(args[4])
 }
-let wallet = new Wallet("default_password");
-HttpApi.initHttpServer(HttpApiPort, new Blockchain(wallet.getAddress()), node, wallet);
+
+HttpApi.initHttpServer(HttpApiPort,bc, node, wallet);

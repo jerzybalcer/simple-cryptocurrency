@@ -5,6 +5,8 @@ import {
   TransactionOutput,
   externalGetTransactionId,
 } from "./Transactions.js";
+let Address =
+  "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEP1BtmgGEgm7UYCvt5WJ3aeTj9/+08vHr7zPFHmsFLSl3pXY3JDPRhczc62RoGgHlWuCieq1wRyYPyH5X5aiYVQ==";
 export class Blockchain {
   private chain: Block[];
   private readonly genesisBlock: Block = new Block(
@@ -18,15 +20,16 @@ export class Blockchain {
   private readonly BlockGenerationIntervalMs: number = 10000;
   private readonly DifficultyAdjustmentIntervalBlocks: number = 10;
 
-  constructor(address: string) {
+  constructor(address: string = "") {
     this.chain = BlocksDatabase.load();
-
     if (this.chain.length === 0) {
       const genesisTx = new Transaction();
 
       // Genesis transactions have no inputs
 
-        const genesisOutput = new TransactionOutput(address, 100); // Mint 100 coins
+      // This is simple workaround - first node to log gets 100 coins
+
+      const genesisOutput = new TransactionOutput(address, 100); // Mint 100 coins
       
      
       genesisTx.txOuts = [genesisOutput];
@@ -36,6 +39,8 @@ export class Blockchain {
       this.genesisBlock.data = [genesisTx];
 
       this.chain = [this.genesisBlock];
+      // Guarantees that at first load, all genesis blocks are the same
+      BlocksDatabase.save(this.chain);
     }
   }
 
@@ -149,18 +154,24 @@ export class Blockchain {
 
   private isNewBlockValid(newBlock: Block, previousBlock: Block): boolean {
     if (!newBlock.hasValidStructure()) {
+      console.log("Invalid block structure")
       return false;
     }
 
     if (previousBlock.index + 1 !== newBlock.index) {
+       console.log("Invalid block index");
       return false;
     }
 
     if (previousBlock.hash !== newBlock.previousHash) {
+      console.log(previousBlock.hash);
+      console.log(newBlock.previousHash)
+       console.log("Invalid previous block hash");
       return false;
     }
 
     if (newBlock.calculateHash() !== newBlock.hash) {
+       console.log("Invalid blockhash");
       return false;
     }
 
@@ -168,6 +179,7 @@ export class Blockchain {
       previousBlock.timestamp - 60 * 1000 > newBlock.timestamp &&
       newBlock.timestamp - 60 * 1000 > new Date().getTime()
     ) {
+      console.log("Something wrong with time")
       return false;
     }
 

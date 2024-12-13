@@ -11,14 +11,19 @@ export class Block implements IBlock {
     difficulty: number;
     nonce: number;
 
-    constructor(index: number, previousHash: string, timestamp: number, data: Transaction[], difficulty: number, nonce: number) {
+    constructor(index: number, previousHash: string, timestamp: number, data: Transaction[], difficulty: number, nonce: number, hash:string = "") {
         this.index = index;
         this.previousHash = previousHash;
         this.timestamp = timestamp;
         this.data = data;
         this.difficulty = difficulty;
         this.nonce = nonce;
-        this.hash = this.calculateHash();
+        if(hash === ""){
+               this.hash = this.calculateHash();
+        }else{
+            this.hash = hash;
+        }
+     
     }
 
     static calculateHash(index: number, previousHash: string, timestamp: number, data: Transaction[], difficulty: number, nonce: number): string {

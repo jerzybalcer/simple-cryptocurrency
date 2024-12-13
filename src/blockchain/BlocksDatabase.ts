@@ -6,7 +6,9 @@ export class BlocksDatabase {
 
     static load(): Block[] {
         if(!fs.existsSync(BlocksDatabase.path)){
+           
             return [];
+           
         }
 
         const data = fs.readFileSync(BlocksDatabase.path, 'utf8');
@@ -19,9 +21,9 @@ export class BlocksDatabase {
                 blockData.timestamp,
                 blockData.data,
                 blockData.difficulty,
-                blockData.nonce
+                blockData.nonce,
+                blockData.hash,
             );
-
             if (!block.hasValidStructure()) {
                 throw new Error(`Invalid block structure at index ${blockData.index}`);
             }
