@@ -57,7 +57,6 @@ export class HttpApi {
     });
 
     app.get("/getAddress", (_: Request, response: Response) => {
-      // Get node address - this is a bit clunky but easier to implement this way
       response.status(200).send(wallet.getAddress());
     });
 
@@ -71,23 +70,16 @@ export class HttpApi {
         response.status(400).send("Invalid block data");
         return;
       }
+
       const newBlock: Block = blockchain.generateNextBlock(request.body.data);
       node.broadcastBlock(newBlock);
       response.status(200).send(newBlock);
     });
 
     app.get("/peers", (_: Request, response: Response) => {
-      // Return known ports
-      const portsArray = Array.from(node.getKnownPorts());
+      const knownPortsArray = Array.from(node.getKnownPorts());
 
-      response.status(200).send(JSON.stringify(portsArray));
-    });
-
-    app.post("/addPeer", (_: Request, response: Response) => {
-      // TODO: add peer - currently joining the network happens when calling Main.js
-      // node.addPeer();
-
-      response.status(200).send();
+      response.status(200).send(JSON.stringify(knownPortsArray));
     });
 
     app.listen(port, () => {
