@@ -16,7 +16,7 @@ const nodePort = parseInt(args[2]);
 
 // Create Node
 const node = new Node(Number.isNaN(nodePort) ? NodeDefaultPort : nodePort);
-console.log(args);
+
 if (args.length === 4) {
   // This is the first node
   node.startAsFirstNode();

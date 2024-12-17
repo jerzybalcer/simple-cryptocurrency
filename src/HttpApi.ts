@@ -18,7 +18,6 @@ export class HttpApi {
     let utxoList: UnspentOutputTransactions[] = [];
     utxoList = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
     
-    console.log(blockchain.getBlocks());
     node.passBlockchain(blockchain);
     node.linkedWallet = wallet;
 
