@@ -1,65 +1,17 @@
 import { Cryptography } from "../Cryptography.js";
-import { Block } from "./Block";
-import { KeyPair } from "../wallet/KeyPair";
+import { Block } from "../blockchain/Block.js";
+import { KeyPair } from "../wallet/KeyPair.js";
+import { Transaction } from "./Transaction.js";
+import { TransactionInput } from "./TransactionInput.js";
+import { TransactionOutput } from "./TransactionOutput.js";
+import { UnspentOutputTransactions } from "./UnspentOutputTransactions.js";
 
-const COINBASE_AMOUNT = 10;
 
-export class UnspentOutputTransactions {
-  // Class for unspent outputs, that are used to calculated how much coin each private key owns
-
-  public readonly txOutId: string; // ID of transaction this output comes from
-  public readonly txOutIndex: number; // index of specific output in transaction outputTransaction List
-  public readonly address: string; //Recipient of output, ie owner of certain amount of money
-  public readonly amount: number;
-
-  constructor(
-    txOutId: string,
-    txOutIndex: number,
-    address: string,
-    amount: number
-  ) {
-    this.txOutId = txOutId;
-    this.txOutIndex = txOutIndex;
-    this.address = address;
-    this.amount = amount;
-  }
-}
-export class TransactionOutput {
-  public address: string; // public key of recipient
-  public amount: number;
-
-  constructor(address: string, amount: number) {
-    this.address = address;
-    this.amount = amount;
-  }
-}
-export class TransactionInput {
-  public txOutId: string; // ID of unspent transaction output this input is referencing
-  public txOutIndex: number; // index of output in transaction outputs it is referencing
-  public signature: string; // proof of ownership
-  constructor() {
-    this.txOutId = "";
-    (this.txOutIndex = 0), (this.signature = "");
-  }
-}
-export class Transaction {
-  public id: string;
-  public txIns: TransactionInput[];
-  public txOuts: TransactionOutput[];
-  constructor() {
-    this.id = "";
-    this.txIns = [];
-    this.txOuts = [];
-  }
-}
-
+// Handles all operations related to transactions
 export class TransactionHandler {
-  // Handles all operations related to transactions
+  private readonly CoinbaseAmount = 10;
 
   // Create UTXO list - should be done every time a blockchain is updated
-
-
-
   public createUTXOList(blockchain: Block[]): UnspentOutputTransactions[] {
     let utxoList: UnspentOutputTransactions[] = [];
     const findIndex = (
@@ -321,7 +273,7 @@ export class TransactionHandler {
       console.log("invalid number of outputs in coinbase transaction");
       return false;
     }
-    if (transaction.txOuts[0].amount != COINBASE_AMOUNT) {
+    if (transaction.txOuts[0].amount != this.CoinbaseAmount) {
       console.log("invalid coinbase amount in coinbase transaction");
       return false;
     }
@@ -412,7 +364,7 @@ export class TransactionHandler {
     txIn.txOutIndex = blockIndex;
     const t = new Transaction();
     t.txIns = [txIn];
-    t.txOuts = [new TransactionOutput(address, COINBASE_AMOUNT)];
+    t.txOuts = [new TransactionOutput(address, this.CoinbaseAmount)];
     t.id = this.getTransactionId(t);
     return t;
   }
@@ -509,7 +461,7 @@ export class TransactionHandler {
   // }
 }
   
- export const externalGetTransactionId = (transaction: Transaction): string => {
+  export const externalGetTransactionId = (transaction: Transaction): string => {
     const txInContent: string = transaction.txIns
       .map((txIn: TransactionInput) => txIn.txOutId + txIn.txOutIndex)
       .reduce((a, b) => a + b, "");

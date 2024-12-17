@@ -3,7 +3,7 @@ import { Blockchain } from "./blockchain/Blockchain.js";
 import { Block } from "./blockchain/Block.js";
 import { Node } from "./Node.js";
 import { Wallet } from "./wallet/Wallet.js";
-import { UnspentOutputTransactions } from "./blockchain/Transactions.js";
+import { UnspentOutputTransactions } from "./transactions/UnspentOutputTransactions.js";
 
 export class HttpApi {
   static initHttpServer = (

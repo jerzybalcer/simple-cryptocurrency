@@ -3,12 +3,10 @@ import { Blockchain } from "./blockchain/Blockchain.js";
 import { Block } from "./blockchain/Block.js";
 import { IBlock } from "./blockchain/IBlock.js";
 import { Wallet } from "./wallet/Wallet.js";
-import {
-  Transaction,
-  TransactionHandler,
-  UnspentOutputTransactions,
-} from "./blockchain/Transactions.js";
 import _ from "lodash";
+import { Transaction } from "./transactions/Transaction.js";
+import { TransactionHandler } from "./transactions/TransactionHandler.js";
+import { UnspentOutputTransactions } from "./transactions/UnspentOutputTransactions.js";
 
 interface Message {
   mode: string; // type of message, used to determine which action should be taken in handleMessage method

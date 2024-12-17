@@ -1,6 +1,9 @@
+import { Transaction } from "../transactions/Transaction.js";
+import { TransactionHandler } from "../transactions/TransactionHandler.js";
+import { TransactionInput } from "../transactions/TransactionInput.js";
+import { UnspentOutputTransactions } from "../transactions/UnspentOutputTransactions.js";
 import { KeyPair } from "./KeyPair.js";
 import { KeyPairsDatabase } from "./KeyPairsDatabase.js";
-import { Transaction, TransactionHandler, TransactionInput, UnspentOutputTransactions } from "../blockchain/Transactions.js";
 
 export class Wallet {
   public tranHandler = new TransactionHandler();

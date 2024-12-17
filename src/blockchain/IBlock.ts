@@ -1,4 +1,4 @@
-import { Transaction } from "./Transactions";
+import { Transaction } from "../transactions/Transaction.js";
 
 export interface IBlock {
     index: number;

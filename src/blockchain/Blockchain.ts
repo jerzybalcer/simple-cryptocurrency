@@ -1,12 +1,9 @@
+import { Transaction } from "../transactions/Transaction.js";
+import { externalGetTransactionId } from "../transactions/TransactionHandler.js";
+import { TransactionOutput } from "../transactions/TransactionOutput.js";
 import { Block } from "./Block.js";
 import { BlocksDatabase } from "./BlocksDatabase.js";
-import {
-  Transaction,
-  TransactionOutput,
-  externalGetTransactionId,
-} from "./Transactions.js";
-let Address =
-  "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEP1BtmgGEgm7UYCvt5WJ3aeTj9/+08vHr7zPFHmsFLSl3pXY3JDPRhczc62RoGgHlWuCieq1wRyYPyH5X5aiYVQ==";
+
 export class Blockchain {
   private chain: Block[];
   private readonly genesisBlock: Block = new Block(
@@ -31,7 +28,6 @@ export class Blockchain {
 
       const genesisOutput = new TransactionOutput(address, 100); // Mint 100 coins
       
-     
       genesisTx.txOuts = [genesisOutput];
 
       // Generate the transaction ID
