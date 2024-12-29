@@ -17,17 +17,6 @@ export class Wallet {
     }
   }
 
-  public getAddress(){
-    // For now assume that we only use one pair of keys
-    // TODO sprawdź proszę co mozna by zrobić zeby móc się przełączać miedzy kluczami w ramach walleta?
-    // Bo to trzeba tez jakoś dodać do obsługi broadcastów zeby wiedziec kiedy wiadomość dociera do wlasciwiego nadawcy
-    return this.keyPairs[0].getAddress();
-  }
-
-  getPublicKey(): string {
-    return this.keyPairs[0].publicKey;
-  }
-
   generateNewKeyPair(password: string) {
     const newKeyPair = KeyPair.generate(password);
     this.keyPairs.push(newKeyPair);
@@ -41,7 +30,7 @@ export class Wallet {
     return this.keyPairs[0];
   }
 
-  public getBalance(
+  getBalance(
     address: string,
     unspentTxOuts: UnspentOutputTransactions[]
   ): number {
@@ -54,13 +43,13 @@ export class Wallet {
     return amount;
   }
 
-  public createNewTransaction (
+  createNewTransaction (
     receiverAddress: string,
     amount: number,
     password: string,
     unspentTxOuts: UnspentOutputTransactions[]
   ): Transaction {
-    const myAddress: string = this.getPublicKey();
+    const myAddress: string = this.getFirstAvailableKeyPair()?.getAddress()!;
     const myUnspentTxOuts = unspentTxOuts.filter(
       (uTxO: UnspentOutputTransactions) => uTxO.address === myAddress
     );

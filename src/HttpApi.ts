@@ -37,7 +37,8 @@ export class HttpApi {
     });
     
     app.get("/getBalance", (_: Request, res: Response) => {
-      let adr = wallet.getAddress();
+      // For now only first keypair is used
+      let adr = wallet.getFirstAvailableKeyPair()?.getAddress()!;
       let utxo = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
       console.log(wallet.getBalance(adr, utxo));
       res.send();
@@ -54,10 +55,6 @@ export class HttpApi {
       );
       node.broadcastTransaction(tr);
       response.send(200);
-    });
-
-    app.get("/getAddress", (_: Request, response: Response) => {
-      response.status(200).send(wallet.getAddress());
     });
 
     app.get("/requestBlockchain", (_: Request, response: Response) => {

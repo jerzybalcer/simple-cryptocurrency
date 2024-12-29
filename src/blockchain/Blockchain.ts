@@ -10,7 +10,7 @@ export class Blockchain {
     0,
     "",
     1731602440343,
-    [] as Transaction[], // TODO: Create correct block data for genesis block
+    [] as Transaction[],
     1,
     0
   );

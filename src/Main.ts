@@ -8,7 +8,7 @@ let HttpApiPort = 3333;
 
 
 let wallet = new Wallet("default_password");
-let bc =  new Blockchain(wallet.getAddress());
+let bc =  new Blockchain(wallet.getFirstAvailableKeyPair()?.getAddress());
 
 // Get Node Port from args
 const args = process.argv.slice();

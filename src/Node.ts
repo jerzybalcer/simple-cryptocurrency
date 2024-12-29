@@ -122,7 +122,7 @@ export class Node {
     this.pendingTransaction.shift();
     let index = this.blockChain.getLatestBlock().index;
     let coinBaseTransaction = this.txHandler.getCoinbaseTransaction(
-      this.linkedWallet!.getAddress(),
+      this.linkedWallet!.getFirstAvailableKeyPair()?.getAddress()!,
       index
     );
     let transactionBlock = [coinBaseTransaction, tr];
