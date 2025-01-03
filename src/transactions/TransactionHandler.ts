@@ -1,11 +1,10 @@
-import { Cryptography } from "../Cryptography.js";
-import { Block } from "../blockchain/Block.js";
-import { KeyPair } from "../wallet/KeyPair.js";
-import { Transaction } from "./Transaction.js";
-import { TransactionInput } from "./TransactionInput.js";
-import { TransactionOutput } from "./TransactionOutput.js";
-import { UnspentOutputTransactions } from "./UnspentOutputTransactions.js";
-
+import { Cryptography } from '../Cryptography.js';
+import { Block } from '../blockchain/Block.js';
+import { KeyPair } from '../wallet/KeyPair.js';
+import { Transaction } from './Transaction.js';
+import { TransactionInput } from './TransactionInput.js';
+import { TransactionOutput } from './TransactionOutput.js';
+import { UnspentOutputTransactions } from './UnspentOutputTransactions.js';
 
 // Handles all operations related to transactions
 export class TransactionHandler {
@@ -14,10 +13,7 @@ export class TransactionHandler {
   // Create UTXO list - should be done every time a blockchain is updated
   public createUTXOList(blockchain: Block[]): UnspentOutputTransactions[] {
     let utxoList: UnspentOutputTransactions[] = [];
-    const findIndex = (
-      utxo: UnspentOutputTransactions,
-      txIn: TransactionInput
-    ): boolean =>
+    const findIndex = (utxo: UnspentOutputTransactions, txIn: TransactionInput): boolean =>
       utxo.txOutId === txIn.txOutId && utxo.txOutIndex === txIn.txOutIndex;
 
     blockchain.forEach((block) => {
@@ -35,9 +31,7 @@ export class TransactionHandler {
 
         // Remove outputs that are referenced as inputs (spent)
         tx.txIns.forEach((txIn) => {
-          const spentIndex = utxoList.findIndex((utxo) =>
-            findIndex(utxo, txIn)
-          );
+          const spentIndex = utxoList.findIndex((utxo) => findIndex(utxo, txIn));
           if (spentIndex >= 0) {
             utxoList.splice(spentIndex, 1); // Remove spent UTXO
           }
@@ -48,9 +42,7 @@ export class TransactionHandler {
   }
 
   // Create unsigned inputs for transaction
-  public createUnsignedTransactionInputs(
-    unspentTxOut: UnspentOutputTransactions
-  ) {
+  public createUnsignedTransactionInputs(unspentTxOut: UnspentOutputTransactions) {
     const txIn: TransactionInput = new TransactionInput();
     txIn.txOutId = unspentTxOut.txOutId;
     txIn.txOutIndex = unspentTxOut.txOutIndex;
@@ -59,16 +51,8 @@ export class TransactionHandler {
 
   //Create transaction outputs
 
-  public createTransactionOutputs(
-    receiverAddress: string,
-    myAddress: string,
-    amount: number,
-    leftOverAmount: number
-  ) {
-    const txOut1: TransactionOutput = new TransactionOutput(
-      receiverAddress,
-      amount
-    );
+  public createTransactionOutputs(receiverAddress: string, myAddress: string, amount: number, leftOverAmount: number) {
+    const txOut1: TransactionOutput = new TransactionOutput(receiverAddress, amount);
     if (leftOverAmount === 0) {
       return [txOut1];
     } else {
@@ -78,15 +62,10 @@ export class TransactionHandler {
   }
 
   // Finds UTXOs for current transaction
-
-  findTransactionOutputsForAmount(
-    amount: number,
-    myUnspentTxOuts: UnspentOutputTransactions[]
-  ) {
+  findTransactionOutputsForAmount(amount: number, myUnspentTxOuts: UnspentOutputTransactions[]) {
     let currentAmount = 0;
     const includedUnspentTxOuts = [];
-    console.log(myUnspentTxOuts);
-    console.log(myUnspentTxOuts);
+
     for (const myUnspentTxOut of myUnspentTxOuts) {
       includedUnspentTxOuts.push(myUnspentTxOut);
       currentAmount = currentAmount + myUnspentTxOut.amount;
@@ -95,18 +74,18 @@ export class TransactionHandler {
         return { includedUnspentTxOuts, leftOverAmount };
       }
     }
-    throw Error("not enough coins to send transaction");
+    throw Error('not enough coins to send transaction');
   }
   // based on all input transaction and output transactions, create ID of transaction as a
   // hash of concatanation of all transactions data
   public getTransactionId(transaction: Transaction): string {
     const txInContent: string = transaction.txIns
       .map((txIn: TransactionInput) => txIn.txOutId + txIn.txOutIndex)
-      .reduce((a, b) => a + b, "");
+      .reduce((a, b) => a + b, '');
 
     const txOutContent: string = transaction.txOuts
       .map((txOut: TransactionOutput) => txOut.address + txOut.amount)
-      .reduce((a, b) => a + b, "");
+      .reduce((a, b) => a + b, '');
 
     return Cryptography.hashUsingSHA256(txInContent + txOutContent).toString();
   }
@@ -121,9 +100,7 @@ export class TransactionHandler {
     const coinbaseTx = aTransactions[0];
     // This is reward transaction for mining the block
     if (!this.validateCoinbaseTransaction(coinbaseTx, blockIndex)) {
-      console.log(
-        "invalid coinbase transaction: " + JSON.stringify(coinbaseTx)
-      );
+      console.log('invalid coinbase transaction: ' + JSON.stringify(coinbaseTx));
       return false;
     }
 
@@ -139,22 +116,17 @@ export class TransactionHandler {
     }
 
     const normalTransactions: Transaction[] = aTransactions.slice(1);
-    return normalTransactions
-      .map((tx) => this.validateTransaction(tx, aUnspentTxOuts))
-      .reduce((a, b) => a && b, true);
+    return normalTransactions.map((tx) => this.validateTransaction(tx, aUnspentTxOuts)).reduce((a, b) => a && b, true);
   }
 
   //Validate transaction, checking ID, inputs and amount.
   // references ValidateInputs
-  public validateTransaction(
-    transaction: Transaction,
-    aUnspentTxOuts: UnspentOutputTransactions[]
-  ): boolean {
+  public validateTransaction(transaction: Transaction, aUnspentTxOuts: UnspentOutputTransactions[]): boolean {
     // Validate certain aspect of transaction
 
     // Check if ID is matching .ie if no one changed anything
     if (this.getTransactionId(transaction) !== transaction.id) {
-      console.log("invalid transaction id: " + transaction.id);
+      console.log('invalid transaction id: ' + transaction.id);
       return false;
     }
 
@@ -164,7 +136,7 @@ export class TransactionHandler {
       .reduce((a, b) => a && b, true);
 
     if (!hasValidTxIns) {
-      console.log("some Inputs are invalid in transaction: " + transaction.id);
+      console.log('some Inputs are invalid in transaction: ' + transaction.id);
       return false;
     }
 
@@ -173,14 +145,10 @@ export class TransactionHandler {
       .map((txIn) => this.getInputAmount(txIn, aUnspentTxOuts))
       .reduce((a, b) => a + b, 0);
 
-    const totalTxOutValues: number = transaction.txOuts
-      .map((txOut) => txOut.amount)
-      .reduce((a, b) => a + b, 0);
+    const totalTxOutValues: number = transaction.txOuts.map((txOut) => txOut.amount).reduce((a, b) => a + b, 0);
 
     if (totalTxOutValues !== totalTxInValues) {
-      console.log(
-        "OutputValue !== InputValue in transation: " + transaction.id
-      );
+      console.log('OutputValue !== InputValue in transation: ' + transaction.id);
       return false;
     }
 
@@ -193,35 +161,22 @@ export class TransactionHandler {
     unspentTransactionList: UnspentOutputTransactions[]
   ): boolean {
     //Validate input to check if it is coming from valid UTXO
-    const referencedUTxOut: UnspentOutputTransactions | undefined =
-      unspentTransactionList.find(
-        (uTxO) =>
-          uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
-      );
+    const referencedUTxOut: UnspentOutputTransactions | undefined = unspentTransactionList.find(
+      (uTxO) => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
+    );
 
     if (referencedUTxOut == undefined) {
-      console.log(
-        "referenced unspent transaction ouput  not found: " +
-          JSON.stringify(txIn)
-      );
+      console.log('referenced unspent transaction ouput  not found: ' + JSON.stringify(txIn));
       return false;
     }
     const address = referencedUTxOut.address;
     // Check if decoded txIn.signature equals transaction.id
-    return Cryptography.verifyUsingECDSA(
-      transaction.id,
-      txIn.signature,
-      address
-    );
+    return Cryptography.verifyUsingECDSA(transaction.id, txIn.signature, address);
   }
   // Finds amount needed for transaction,
   // references findUsnpentOutputs
-  public getInputAmount(
-    txIn: TransactionInput,
-    aUnspentTxOuts: UnspentOutputTransactions[]
-  ): number {
-    return this.findUnspentOutput(txIn.txOutId, txIn.txOutIndex, aUnspentTxOuts)
-      .amount;
+  public getInputAmount(txIn: TransactionInput, aUnspentTxOuts: UnspentOutputTransactions[]): number {
+    return this.findUnspentOutput(txIn.txOutId, txIn.txOutIndex, aUnspentTxOuts).amount;
   }
   // Finds UTXOs, based on transactionId
   public findUnspentOutput(
@@ -229,9 +184,7 @@ export class TransactionHandler {
     index: number,
     aUnspentTxOuts: UnspentOutputTransactions[]
   ): UnspentOutputTransactions {
-    return aUnspentTxOuts.find(
-      (uTxO) => uTxO.txOutId === transactionId && uTxO.txOutIndex === index
-    )!;
+    return aUnspentTxOuts.find((uTxO) => uTxO.txOutId === transactionId && uTxO.txOutIndex === index)!;
   }
 
   // Check array for duplicate inputs
@@ -243,38 +196,34 @@ export class TransactionHandler {
       });
     });
 
-    const hasDuplicates =
-      new Set(tempArray.map((a) => JSON.stringify(a))).size !== txIns.length;
+    const hasDuplicates = new Set(tempArray.map((a) => JSON.stringify(a))).size !== txIns.length;
     return hasDuplicates;
   }
 
   // Checks the reward transaction one gets for minig the block
-  public validateCoinbaseTransaction(
-    transaction: Transaction,
-    blockIndex: number
-  ): boolean {
+  public validateCoinbaseTransaction(transaction: Transaction, blockIndex: number): boolean {
     if (transaction == null) {
-      console.log("First transaction must be coinbase");
+      console.log('First transaction must be coinbase');
       return false;
     }
     if (this.getTransactionId(transaction) !== transaction.id) {
-      console.log("invalid coinbase transaction id: " + transaction.id);
+      console.log('invalid coinbase transaction id: ' + transaction.id);
       return false;
     }
     if (transaction.txIns.length !== 1) {
-      console.log("one txIn must be specified in the coinbase transaction");
+      console.log('one txIn must be specified in the coinbase transaction');
       return false;
     }
     if (transaction.txIns[0].txOutIndex !== blockIndex) {
-      console.log("the txIn signature in coinbase tx must be the block height");
+      console.log('the txIn signature in coinbase tx must be the block height');
       return false;
     }
     if (transaction.txOuts.length !== 1) {
-      console.log("invalid number of outputs in coinbase transaction");
+      console.log('invalid number of outputs in coinbase transaction');
       return false;
     }
     if (transaction.txOuts[0].amount != this.CoinbaseAmount) {
-      console.log("invalid coinbase amount in coinbase transaction");
+      console.log('invalid coinbase amount in coinbase transaction');
       return false;
     }
     return true;
@@ -288,31 +237,17 @@ export class TransactionHandler {
   ): UnspentOutputTransactions[] {
     const newUnspentTxOuts: UnspentOutputTransactions[] = newTransactions
       .map((t) => {
-        return t.txOuts.map(
-          (txOut, index) =>
-            new UnspentOutputTransactions(
-              t.id,
-              index,
-              txOut.address,
-              txOut.amount
-            )
-        );
+        return t.txOuts.map((txOut, index) => new UnspentOutputTransactions(t.id, index, txOut.address, txOut.amount));
       })
       .reduce((a, b) => a.concat(b), []);
 
     const consumedTxOuts: UnspentOutputTransactions[] = newTransactions
       .map((t) => t.txIns)
       .reduce((a, b) => a.concat(b), [])
-      .map(
-        (txIn) =>
-          new UnspentOutputTransactions(txIn.txOutId, txIn.txOutIndex, "", 0)
-      );
+      .map((txIn) => new UnspentOutputTransactions(txIn.txOutId, txIn.txOutIndex, '', 0));
 
     const resultingUnspentTxOuts = aUnspentTxOuts
-      .filter(
-        (uTxO) =>
-          !this.findUnspentOutput(uTxO.txOutId, uTxO.txOutIndex, consumedTxOuts)
-      )
+      .filter((uTxO) => !this.findUnspentOutput(uTxO.txOutId, uTxO.txOutIndex, consumedTxOuts))
       .concat(newUnspentTxOuts);
 
     return resultingUnspentTxOuts;
@@ -328,39 +263,35 @@ export class TransactionHandler {
   ): string {
     const txIn: TransactionInput = transaction.txIns[txInIndex];
     const dataToSign = transaction.id;
-    const referencedUnspentTxOut: UnspentOutputTransactions =
-      this.findUnspentOutput(txIn.txOutId, txIn.txOutIndex, aUnspentTxOuts);
+    const referencedUnspentTxOut: UnspentOutputTransactions = this.findUnspentOutput(
+      txIn.txOutId,
+      txIn.txOutIndex,
+      aUnspentTxOuts
+    );
 
     if (referencedUnspentTxOut == null) {
-      console.log("could not find referenced txOut");
+      console.log('could not find referenced txOut');
       throw Error();
     }
 
     const referencedAddress = referencedUnspentTxOut.address;
     if (keyPair.publicKey !== referencedAddress) {
       console.log(
-        "trying to sign an input with private" +
-          " key that does not match the address that is referenced in txIn"
+        'trying to sign an input with private' + ' key that does not match the address that is referenced in txIn'
       );
       throw Error();
     }
 
-    const signature = Cryptography.signUsingECDSA(
-      dataToSign,
-      keyPair.getDecryptedPrivateKey(password)
-    );
+    const signature = Cryptography.signUsingECDSA(dataToSign, keyPair.getDecryptedPrivateKey(password));
 
     return signature;
   }
 
   // Creates coinbase transaction to be included in block
-  public getCoinbaseTransaction(
-    address: string,
-    blockIndex: number
-  ): Transaction {
+  public getCoinbaseTransaction(address: string, blockIndex: number): Transaction {
     const txIn: TransactionInput = new TransactionInput();
-    txIn.signature = "";
-    txIn.txOutId = "";
+    txIn.signature = '';
+    txIn.txOutId = '';
     txIn.txOutIndex = blockIndex;
     const t = new Transaction();
     t.txIns = [txIn];
@@ -382,162 +313,107 @@ export class TransactionHandler {
       return null;
     }
 
-    if (
-      !this.validateBlockTransactions(aTransactions, aUnspentTxOuts, blockIndex)
-    ) {
-      console.log("invalid block transactions");
+    if (!this.validateBlockTransactions(aTransactions, aUnspentTxOuts, blockIndex)) {
+      console.log('invalid block transactions');
       return null;
     }
-    return updateUTXOs ?this.updateUnspentTxOuts(aTransactions, aUnspentTxOuts) : true;
-  }
-
-  public toHexString(byteArray: any): string {
-    return Array.from(byteArray, (byte: any) => {
-      return ("0" + (byte & 0xff).toString(16)).slice(-2);
-    }).join("");
+    return updateUTXOs ? this.updateUnspentTxOuts(aTransactions, aUnspentTxOuts) : true;
   }
 
   // Check if structure of transaction ( types) are correct
   // Uses isValidTransactionStructure
   public isValidTransactionsStructure(transactions: Transaction[]): boolean {
-    return transactions
-      .map(this.isValidTransactionStructure)
-      .reduce((a, b) => a && b, true);
+    return transactions.map(this.isValidTransactionStructure).reduce((a, b) => a && b, true);
   }
 
   // Checks individual transaction structure,
   // uses isValidTxInstructure, isValidTxOutStructure
   public isValidTransactionStructure(transaction: Transaction) {
     const that = this;
-    if (typeof transaction.id !== "string") {
-      console.log("transactionId missing");
+    if (typeof transaction.id !== 'string') {
+      console.log('transactionId missing');
       return false;
     }
     if (!(transaction.txIns instanceof Array)) {
-      console.log("invalid txIns type in transaction");
+      console.log('invalid txIns type in transaction');
       return false;
     }
     if (
       !Array.isArray(transaction.txIns) ||
-      !transaction.txIns
-        .map(isValidTxInStructure)
-        .reduce((a, b) => a && b, true)
+      !transaction.txIns.map(isValidTxInStructure).reduce((a, b) => a && b, true)
     ) {
       return false;
     }
 
     if (!(transaction.txOuts instanceof Array)) {
-      console.log("invalid txIns type in transaction");
+      console.log('invalid txIns type in transaction');
       return false;
     }
 
-    if (
-      !transaction.txOuts
-        .map(isValidTxOutStructure)
-        .reduce((a, b) => a && b, true)
-    ) {
+    if (!transaction.txOuts.map(isValidTxOutStructure).reduce((a, b) => a && b, true)) {
       return false;
     }
     return true;
   }
-
-  // Checks structure of transaction output
-  // public isValidTxOutStructure(txOut: TransactionOutput): boolean {
-  //   if (txOut == null) {
-  //     console.log("txOut is null");
-  //     return false;
-  //   } else if (typeof txOut.address !== "string") {
-  //     console.log("invalid address type in transaction output");
-  //     return false;
-  //   } else if (!isValidAddress(txOut.address)) {
-  //     console.log("invalid transaction output address");
-  //     return false;
-  //   } else if (typeof txOut.amount !== "number") {
-  //     console.log("invalid amount type in txOut");
-  //     return false;
-  //   } else {
-  //     return true;
-  //   }
-  // }
 }
-  
-  export const externalGetTransactionId = (transaction: Transaction): string => {
-    const txInContent: string = transaction.txIns
-      .map((txIn: TransactionInput) => txIn.txOutId + txIn.txOutIndex)
-      .reduce((a, b) => a + b, "");
 
-    const txOutContent: string = transaction.txOuts
-      .map((txOut: TransactionOutput) => txOut.address + txOut.amount)
-      .reduce((a, b) => a + b, "");
+export const externalGetTransactionId = (transaction: Transaction): string => {
+  const txInContent: string = transaction.txIns
+    .map((txIn: TransactionInput) => txIn.txOutId + txIn.txOutIndex)
+    .reduce((a, b) => a + b, '');
 
-    return Cryptography.hashUsingSHA256(txInContent + txOutContent).toString();
+  const txOutContent: string = transaction.txOuts
+    .map((txOut: TransactionOutput) => txOut.address + txOut.amount)
+    .reduce((a, b) => a + b, '');
+
+  return Cryptography.hashUsingSHA256(txInContent + txOutContent).toString();
+};
+
+// Checks structure of transaction input
+export const isValidTxInStructure = (txIn: TransactionInput) => {
+  if (txIn == null) {
+    console.log('txIn is null');
+    return false;
+  } else if (typeof txIn.signature !== 'string') {
+    console.log('invalid signature type in txIn');
+    return false;
+  } else if (typeof txIn.txOutId !== 'string') {
+    console.log('invalid txOutId type in txIn');
+    return false;
+  } else if (typeof txIn.txOutIndex !== 'number') {
+    console.log('invalid txOutIndex type in txIn');
+    return false;
+  } else {
+    return true;
   }
-
-
-  // Checks structure of transaction input
-export const isValidTxInStructure = (txIn:TransactionInput) => {
-    if (txIn == null) {
-        console.log("txIn is null");
-        return false;
-    }
-    else if (typeof txIn.signature !== "string") {
-        console.log("invalid signature type in txIn");
-        return false;
-    }
-    else if (typeof txIn.txOutId !== "string") {
-        console.log("invalid txOutId type in txIn");
-        return false;
-    }
-    else if (typeof txIn.txOutIndex !== "number") {
-        console.log("invalid txOutIndex type in txIn");
-        return false;
-    }
-    else {
-        return true;
-    }
 };
 // Checks structure of transaction output
-   export const isValidTxOutStructure=(txOut:TransactionOutput):boolean =>{
-        if (txOut == null) {
-            console.log("txOut is null");
-            return false;
-        }
-        else if (typeof txOut.address !== "string") {
-            console.log("invalid address type in transaction output");
-            return false;
-        }
-        else if (!isValidAddress(txOut.address)) {
-            console.log("invalid transaction output address");
-            return false;
-        }
-        else if (typeof txOut.amount !== "number") {
-            console.log("invalid amount type in txOut");
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-
-    //
-   // Checks if address is valid - length, hexcharacters /. etc
-  const isValidAddress = (address: string): boolean => {
-    console.log("CHecking address validity\n");
-    console.log(address);
-
-    // THIS is wrong to check - our address has 120 chars
-    // if (address.length !== 130) {
-    //   console.log("invalid public key length");
-    //   return false;
-    // } else 
-     if (address.match(/^[A-Za-z0-9+/=]+$/) === null) {
-       console.log("The address must contain only Base64 characters.");
-       return false;
-     }
-     // THis is for hexendcoded eliptic curve address - we have base64
-    //  } else if (!address.startsWith("04")) {
-    //    console.log("public key must start with 04");
-    //    return false;
-    //  }
+export const isValidTxOutStructure = (txOut: TransactionOutput): boolean => {
+  if (txOut == null) {
+    console.log('txOut is null');
+    return false;
+  } else if (typeof txOut.address !== 'string') {
+    console.log('invalid address type in transaction output');
+    return false;
+  } else if (!isValidAddress(txOut.address)) {
+    console.log('invalid transaction output address');
+    return false;
+  } else if (typeof txOut.amount !== 'number') {
+    console.log('invalid amount type in txOut');
+    return false;
+  } else {
     return true;
   }
+};
+
+// Checks if address is valid - length, hexcharacters /. etc
+const isValidAddress = (address: string): boolean => {
+  console.log('CHecking address validity\n');
+
+  if (address.match(/^[A-Za-z0-9+/=]+$/) === null) {
+    console.log('The address must contain only Base64 characters.');
+    return false;
+  }
+
+  return true;
+};

@@ -21,10 +21,6 @@ export class HttpApi {
     node.passBlockchain(blockchain);
     node.linkedWallet = wallet;
 
-    app.get("/blocks", (_: Request, response: Response) => {
-      response.send(blockchain.getBlocks());
-    });
-
     app.get("/utxoList", (_: Request, res: Response) => {
       utxoList = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
       res.send(utxoList);
@@ -40,13 +36,13 @@ export class HttpApi {
       // For now only first keypair is used
       let adr = wallet.getFirstAvailableKeyPair()?.getAddress()!;
       let utxo = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
-      console.log(wallet.getBalance(adr, utxo));
-      res.send();
+
+      const balance = wallet.getBalance(adr, utxo);
+      res.send({balance: balance});
     });
 
     app.post("/makeTransaction", (request: Request, response: Response) => {
       //Make transaction to address specified in request - no cheats allowed.
-
       let tr = wallet.createNewTransaction(
         request.body.receiverAddress,
         request.body.amount,
@@ -54,7 +50,7 @@ export class HttpApi {
         utxoList
       );
       node.broadcastTransaction(tr);
-      response.send(200);
+      response.sendStatus(200);
     });
 
     app.get("/requestBlockchain", (_: Request, response: Response) => {
@@ -62,21 +58,14 @@ export class HttpApi {
       response.send(blockchain.getBlocks());
     });
 
-    app.post("/mineBlock", (request: Request, response: Response) => {
-      if (!request.body.data) {
-        response.status(400).send("Invalid block data");
-        return;
-      }
-
-      const newBlock: Block = blockchain.generateNextBlock(request.body.data);
-      node.broadcastBlock(newBlock);
-      response.status(200).send(newBlock);
-    });
-
     app.get("/peers", (_: Request, response: Response) => {
       const knownPortsArray = Array.from(node.getKnownPorts());
 
       response.status(200).send(JSON.stringify(knownPortsArray));
+    });
+
+    app.get("/address", (_: Request, response: Response) => {
+      response.status(200).send(wallet.getFirstAvailableKeyPair()?.getAddress());
     });
 
     app.listen(port, () => {

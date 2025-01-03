@@ -31,12 +31,8 @@ interface SocketPortPair {
 export class Node {
   private port: number;
   private server: WebSocketServer | null = null;
-
   private peers: SocketPortPair[] = []; // list of connected sockets
   private knownPorts: Set<number> = new Set<number>(); // list of known socket ports that current node knows
-
-  private isFirstNode: boolean = false;
-
   private hasBlockChain = false;
   private blockChain: Blockchain = new Blockchain();
   public linkedWallet: Wallet | undefined = undefined;
