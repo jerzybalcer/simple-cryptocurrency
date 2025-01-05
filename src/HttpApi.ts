@@ -43,6 +43,7 @@ export class HttpApi {
 
     app.post("/makeTransaction", (request: Request, response: Response) => {
       //Make transaction to address specified in request - no cheats allowed.
+      utxoList = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
       let tr = wallet.createNewTransaction(
         request.body.receiverAddress,
         request.body.amount,
