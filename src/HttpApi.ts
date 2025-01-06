@@ -38,7 +38,7 @@ export class HttpApi {
       let utxo = wallet.tranHandler.createUTXOList(blockchain.getBlocks());
 
       const balance = wallet.getBalance(adr, utxo);
-      res.send({balance: balance});
+      res.send({balances: balance});
     });
 
     app.post("/makeTransaction", (request: Request, response: Response) => {

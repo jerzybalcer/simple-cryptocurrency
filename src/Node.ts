@@ -73,10 +73,9 @@ export class Node {
       data: tr,
     };
     let message = JSON.stringify(preMessage);
-    console.log("Sending broadcast about new transaction");
-    console.log(tr);
-    this.peers.forEach((peer) => {
-      
+    // console.log("Sending broadcast about new transaction");
+    // console.log(tr);
+    this.peers.forEach((peer) => { 
       peer.socket.send(message);
     });
   }
@@ -115,6 +114,7 @@ export class Node {
 
   private processTransactionFromList(tr: Transaction) {
     // Delete pending transaction from array - mine or not, it will not be used anymore
+  //  console.log("Processing transaction from list");
     this.pendingTransaction.shift();
     let index = this.blockChain.getLatestBlock().index;
     let coinBaseTransaction = this.txHandler.getCoinbaseTransaction(
@@ -138,6 +138,9 @@ export class Node {
       this.isMining = false;
       this.broadcastBlock(newBlock);
     }
+    else {
+      console.log("Transaction was for some reason invalid")
+    }
   }
   public enableMining(period: number) {
     this.transactionChecker(period);
@@ -149,7 +152,8 @@ export class Node {
 
   private updateTransactionPool(unspentTxOuts: UnspentOutputTransactions[]) {
     const invalidTxs = [];
-    console.log("Checking pending transactions, please wait...\n")
+  //  console.log("Checking pending transactions, please wait...\n")
+    
     for (const tx of this.pendingTransaction) {
       for (const txIn of tx.txIns) {
         const referencedUTxOut: UnspentOutputTransactions | undefined =
@@ -158,10 +162,10 @@ export class Node {
               uTxO.txOutId === txIn.txOutId &&
               uTxO.txOutIndex === txIn.txOutIndex
           );
-          console.log("Transaction :\n")
-          console.log(tx)
-          console.log("UTXOS \n")
-          console.log(unspentTxOuts);
+        //  console.log("Transaction :\n")
+       //   console.log(tx)
+         // console.log("UTXOS \n")
+          //console.log(unspentTxOuts);
         if (!referencedUTxOut) {
           invalidTxs.push(tx);
         }
@@ -181,6 +185,7 @@ export class Node {
   private transactionChecker(intervalMs: number) {
     // Periodic checking for transactions to be processed
     setInterval(async () => {
+      this.requestBlockchain();
       try {
         this.updateTransactionPool(
           this.txHandler.createUTXOList(this.blockChain.getBlocks())
@@ -188,7 +193,7 @@ export class Node {
         let pendingTransactions = this.getPendingTransactions();
 
         if (pendingTransactions.length === 0) {
-          console.log("No pending transactions to process.");
+        //  console.log("No pending transactions to process.");
           return;
         }
         if (!this.isMining) {
@@ -225,6 +230,8 @@ export class Node {
       console.log("Sending broadcast about new block");
       peer.socket.send(message);
     });
+    this.broadcastBlockchain();
+    this.requestBlockchain();
   }
 
   // Join an existing network by connecting to another node
@@ -353,11 +360,15 @@ export class Node {
               );
               tempChain.push(b);
             });
-            if (tempChain.length > this.blockChain.getBlocks().length) {
+            if (tempChain.length >= this.blockChain.getBlocks().length) {
+              let copy = this.blockChain.getBlocks().slice();
+              console.log("Replacing Chain")
               this.blockChain.replaceChain(tempChain);
+
+              if(!this.chainCompare(copy, this.blockChain.getBlocks())){
               if (data.port !== this.port) {
                 this.broadcastBlockchain();
-              }
+              }}
             }
           } else {
             this.peers.forEach((peer) => {
@@ -385,7 +396,7 @@ export class Node {
           });
           break;
         case "broadcastBlock":
-          console.log("Node broadcast");
+          console.log("New Block broadcast");
           // With new blocks and transactions  we should now check if they are valid herer
           let messageInnerData = data.data as AdvancedMessage;
 
@@ -402,16 +413,17 @@ export class Node {
           // let flag = this.txHandler.processTransactions(
           //   newBlock.data,
           //   utxo,
-          //   newBlock.index,
+          //   newBlock.index - 1,
           //   true
           // );
-          // TODO Omething is broken with valifating block, repair later
+        //  TODO Omething is broken with valifating block, repair later
           let flag = true
           // continue sending block ONLY IF it is correct - either way stop, to stop spreading errors
           if (flag) {
             if (this.hasBlockChain) {
               console.log("New block acquired");
               this.blockChain.addBlock(newBlock);
+              this.broadcastBlockchain();
             }
             let broadcastBLockMessage = JSON.stringify(data);
             if (data.data.port !== this.port) {
@@ -446,7 +458,9 @@ export class Node {
       }
     }
   }
-
+  chainCompare(chain1: Block[], chain2: Block[]){
+    return chain1.every((block, index) => block.hash === chain2[index].hash);
+  }
   reconnect(portLost: number) {
     let mes: Message = {
       type: "broadcastDeleteNode",

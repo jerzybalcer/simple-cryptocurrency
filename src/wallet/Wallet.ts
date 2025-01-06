@@ -30,20 +30,37 @@ export class Wallet {
     return this.keyPairs[0];
   }
 
-  getBalance(
-    address: string,
+  // getBalance(
+  //   address: string,
+  //   unspentTxOuts: UnspentOutputTransactions[]
+  // ): number {
+  //   let amount = 0;
+  //   unspentTxOuts.forEach((utxo) => {
+  //     if (utxo.address === address) {
+  //       amount = amount + utxo.amount;
+  //     }
+  //   });
+  //   return amount;
+  // }
+  getBalance(address:string,
     unspentTxOuts: UnspentOutputTransactions[]
-  ): number {
-    let amount = 0;
-    unspentTxOuts.forEach((utxo) => {
-      if (utxo.address === address) {
-        amount = amount + utxo.amount;
-      }
-    });
-    return amount;
+  ): Record<string, number> {
+      const balances: Record<string, number> = {};
+
+      unspentTxOuts.forEach((utxo) => {
+        // Clip the address to show only the last 4 characters
+        const clippedAddress = utxo.address.slice(-4);
+
+        if (!balances[clippedAddress]) {
+          balances[clippedAddress] = 0;
+        }
+        balances[clippedAddress] += utxo.amount;
+      });
+
+      return balances;
   }
 
-  createNewTransaction (
+  createNewTransaction(
     receiverAddress: string,
     amount: number,
     password: string,
@@ -83,5 +100,5 @@ export class Wallet {
     });
 
     return tx;
-  };
+  }
 }

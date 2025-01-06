@@ -215,6 +215,8 @@ export class TransactionHandler {
       return false;
     }
     if (transaction.txIns[0].txOutIndex !== blockIndex) {
+      console.log("txOutIndex: ", transaction.txIns[0].txOutIndex);
+      console.log("blockIndes: ", blockIndex);
       console.log('the txIn signature in coinbase tx must be the block height');
       return false;
     }

@@ -98,7 +98,7 @@ export class Blockchain {
         )
       )
     ) {
-      console.log("Mining... Nonce:", nonce);
+      // console.log("Mining... Nonce:", nonce);
       nonce++;
     }
 
@@ -186,10 +186,12 @@ export class Blockchain {
     const latestBlock = this.getLatestBlock();
 
     if (!this.isNewBlockValid(newBlock, latestBlock)) {
-      throw Error("New block is invalid");
+      console.log("ERROR: New block is invalid");
+    }else{
+       this.chain.push(newBlock);
     }
 
-    this.chain.push(newBlock);
+   
   }
 
   private isOtherChainMatching = (otherChain: Block[]): boolean => {
@@ -208,20 +210,30 @@ export class Blockchain {
 
   public replaceChain = (newChain: Block[]): Block[] => {
     if (!this.isOtherChainMatching(newChain)) {
-      throw Error("New chain is invalid");
-    }
-
-    if (
+      console.error("New chain is invalid");
+    }else if (
       this.getAccumulatedDifficulty(newChain) <=
       this.getAccumulatedDifficulty(this.chain)
     ) {
-      throw Error("New chain should have bigger accumulated difficulty");
+      console.error("New chain should have bigger accumulated difficulty");
+    }else if(newChain.length < this.chain.length){
+      console.error("New chain should be longer")
+    }else if(newChain.length === this.chain.length){
+      // for tie breaking, select chain with smaller hash
+      console.log("Same length comparison")
+      if(this.hashToNumber(newChain[newChain.length -1].hash)< this.hashToNumber(this.chain[this.chain.length-1].hash)){
+        console.log("Adopted chain with smaller hash");
+        this.chain = newChain;
+      }
     }
-
+    else{
     this.chain = newChain;
-
+    }
     return this.chain;
   };
+ hashToNumber(hash: string): bigint {
+  return BigInt(`0x${hash}`);
+}
 
   private getAccumulatedDifficulty = (chain: Block[]): number => {
     return chain

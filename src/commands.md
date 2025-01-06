@@ -29,7 +29,7 @@ curl http://localhost:3334/address
 curl -X POST http://localhost:3333/makeTransaction \
 -H "Content-Type: application/json" \
 -d '{
-  "receiverAddress": "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEPFrqQlNPqhNrCAU3gnVq1x2LVDwwGIRS5e/MMgD8xqjusnmNa0WWOFCyjJf1QyqEOSxjg7zJR/n3VYRH0974AA==",
+  "receiverAddress": "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEEMZVyhwzJujMhq4DmbTV1kknMluD2WbO8I52RL6gn/a9dJfhcIkrPX/Rjf0Uv1G5BIQnxfwckIYpuFqed0mhCQ==",
   "amount": 10,
   "password": "default_password"
 }'
